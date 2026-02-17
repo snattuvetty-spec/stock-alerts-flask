@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Stock Alerts Pro{% endblock %} — Natts Digital</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --brand: #2E86AB;
+            --brand-dark: #1a6a8a;
+            --brand-light: #e8f4f8;
+            --danger: #e74c3c;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --text: #1a1a2e;
+            --text-muted: #6b7280;
+            --border: #e5e7eb;
+            --bg: #f8fafc;
+            --white: #ffffff;
+            --radius: 10px;
+            --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+        /* NAV */
+        nav {
+            background: var(--white);
+            border-bottom: 1px solid var(--border);
+            padding: 0 20px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 16px;
+            color: var(--brand);
+            text-decoration: none;
+        }
+        .nav-brand span { font-size: 22px; }
+        .nav-links { display: flex; align-items: center; gap: 6px; }
+        .nav-links a, .nav-links button {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            font-family: 'DM Sans', sans-serif;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.15s;
+            color: var(--text-muted);
+            background: transparent;
+        }
+        .nav-links a:hover, .nav-links button:hover { background: var(--bg); color: var(--brand); }
+        .nav-links a.active { background: var(--brand-light); color: var(--brand); font-weight: 600; }
+        .btn-add {
+            background: var(--brand) !important;
+            color: white !important;
+            padding: 7px 16px !important;
+        }
+        .btn-add:hover { background: var(--brand-dark) !important; }
+        .nav-user { font-weight: 600; color: var(--text); font-size: 14px; }
+
+        /* MAIN CONTENT */
+        .container { max-width: 1100px; margin: 0 auto; padding: 28px 20px; }
+        .page-title {
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* CARDS */
+        .card {
+            background: var(--white);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+        .card-body { padding: 20px; }
+
+        /* ALERTS TABLE */
+        .table-wrap {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        thead tr { background: var(--brand); }
+        thead th {
+            padding: 12px 14px;
+            text-align: left;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+            white-space: nowrap;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+        }
+        tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+        tbody tr:last-child { border-bottom: none; }
+        tbody tr:hover { background: #f8fbfd; }
+        tbody td { padding: 13px 14px; font-size: 14px; vertical-align: middle; }
+        .symbol { font-weight: 700; font-size: 15px; }
+        .price { font-family: 'DM Mono', monospace; font-weight: 500; }
+        .change-up { color: var(--success); font-size: 11px; }
+        .change-dn { color: var(--danger); font-size: 11px; }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .badge-above { background: #e8f5e9; color: #2e7d32; }
+        .badge-below { background: #fce4ec; color: #c62828; }
+        .status-triggered { color: var(--success); font-weight: 700; }
+        .status-waiting { color: var(--text-muted); }
+
+        /* BUTTONS */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 7px 14px;
+            border-radius: 7px;
+            font-size: 13px;
+            font-weight: 500;
+            font-family: 'DM Sans', sans-serif;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.15s;
+        }
+        .btn-primary { background: var(--brand); color: white; }
+        .btn-primary:hover { background: var(--brand-dark); }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-danger:hover { background: #c0392b; }
+        .btn-outline {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+        }
+        .btn-outline:hover { border-color: var(--brand); color: var(--brand); }
+        .btn-sm { padding: 5px 10px; font-size: 12px; }
+        .btn-block { width: 100%; justify-content: center; padding: 12px; font-size: 15px; }
+
+        /* FORMS */
+        .form-group { margin-bottom: 16px; }
+        label { display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+        input, select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: 'DM Sans', sans-serif;
+            color: var(--text);
+            background: var(--white);
+            transition: border 0.15s;
+            outline: none;
+        }
+        input:focus, select:focus { border-color: var(--brand); }
+        .input-hint { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+        /* ALERTS */
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .alert-error { background: #fde8e8; color: #c0392b; border: 1px solid #f5c6c6; }
+        .alert-success { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
+        .alert-warning { background: #fff8e1; color: #e65100; border: 1px solid #ffe082; }
+        .alert-info { background: var(--brand-light); color: var(--brand-dark); border: 1px solid #bee3f0; }
+
+        /* TRIAL BADGE */
+        .trial-badge {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* FOOTER */
+        footer {
+            text-align: center;
+            padding: 24px 20px;
+            font-size: 12px;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border);
+            margin-top: 40px;
+        }
+        footer a { color: var(--text-muted); text-decoration: underline; }
+
+        /* MOBILE */
+        @media (max-width: 640px) {
+            nav { padding: 0 14px; }
+            .nav-brand-text { display: none; }
+            .container { padding: 16px 14px; }
+            .page-title { font-size: 22px; }
+            .nav-links a span.label { display: none; }
+        }
+
+        /* CONFIRM DIALOG */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 999;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 360px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+        .modal h3 { font-size: 18px; margin-bottom: 8px; }
+        .modal p { color: var(--text-muted); font-size: 14px; margin-bottom: 20px; }
+        .modal-btns { display: flex; gap: 10px; }
+        .modal-btns button { flex: 1; }
+    </style>
+</head>
+<body>
+
+{% if session.username %}
+<nav>
+    <a href="/dashboard" class="nav-brand">
+        <span>📊</span>
+        <span class="nav-brand-text">Stock Alerts Pro</span>
+    </a>
+    <div class="nav-links">
+        <span class="nav-user">👋 {{ session.name.split()[0] }}</span>
+        <a href="/dashboard" class="{{ 'active' if request.path == '/dashboard' }}">
+            🏠 <span class="label">Dashboard</span>
+        </a>
+        <a href="/add" class="btn-add">
+            ➕ <span class="label">Add Alert</span>
+        </a>
+        <a href="/settings" class="{{ 'active' if request.path == '/settings' }}">
+            ⚙️ <span class="label">Settings</span>
+        </a>
+        <a href="/logout">🚪 <span class="label">Logout</span></a>
+    </div>
+</nav>
+{% endif %}
+
+<div class="container">
+    {% block content %}{% endblock %}
+</div>
+
+<footer>
+    ⚠️ Stock Alerts Pro provides price notifications only. This is NOT financial advice.<br>
+    Natts Digital is not an AFS licensee. Always consult a licensed financial advisor.<br>
+    <a href="#">Terms & Disclaimer</a> · <a href="#">Privacy Policy</a> · © 2026 Natts Digital
+</footer>
+
+<!-- Delete Confirm Modal -->
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal">
+        <h3>🗑️ Delete Alert</h3>
+        <p id="deleteModalText">Are you sure you want to delete this alert?</p>
+        <div class="modal-btns">
+            <button class="btn btn-outline" onclick="closeDeleteModal()">❌ Cancel</button>
+            <form id="deleteForm" method="POST" style="flex:1">
+                <button type="submit" class="btn btn-danger btn-block">✅ Yes, Delete</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDelete(alertId, symbol) {
+    document.getElementById('deleteModalText').textContent = `Delete the ${symbol} alert?`;
+    document.getElementById('deleteForm').action = '/delete/' + alertId;
+    document.getElementById('deleteModal').classList.add('active');
+}
+function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.remove('active');
+}
+// Close modal on backdrop click
+document.getElementById('deleteModal').addEventListener('click', function(e) {
+    if (e.target === this) closeDeleteModal();
+});
+</script>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

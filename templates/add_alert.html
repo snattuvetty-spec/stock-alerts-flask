@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Add Alert{% endblock %}
+{% block content %}
+<div class="page-title">➕ Add New Alert</div>
+<div style="max-width:480px;">
+<div class="card">
+<div class="card-body">
+    {% if error %}<div class="alert alert-error">❌ {{ error }}</div>{% endif %}
+    <form method="POST" id="addForm">
+        <div class="form-group">
+            <label>Stock Symbol</label>
+            <input type="text" name="symbol" id="symbolInput" placeholder="e.g. AAPL, TSLA, BTQ"
+                   style="text-transform:uppercase;" required>
+            <div class="input-hint">Enter the ticker symbol (e.g. AAPL for Apple)</div>
+        </div>
+        <div id="pricePreview" style="display:none;background:#e8f4f8;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:14px;">
+            <strong id="priceSymbol"></strong> current price: <strong id="priceValue"></strong>
+        </div>
+        <div class="form-group">
+            <label>Target Price ($)</label>
+            <input type="number" name="target" step="0.01" min="0.01" placeholder="0.00" required>
+        </div>
+        <div class="form-group">
+            <label>Alert When Price Goes</label>
+            <select name="alert_type">
+                <option value="above">🔼 Above target</option>
+                <option value="below">🔽 Below target</option>
+            </select>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:20px;">
+            <a href="/dashboard" class="btn btn-outline" style="flex:1;justify-content:center;">← Cancel</a>
+            <button type="submit" class="btn btn-primary" style="flex:2;">✅ Create Alert</button>
+        </div>
+    </form>
+</div>
+</div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+let priceTimer;
+document.getElementById('symbolInput').addEventListener('input', function() {
+    clearTimeout(priceTimer);
+    const sym = this.value.toUpperCase().trim();
+    if (sym.length >= 1) {
+        priceTimer = setTimeout(() => {
+            fetch('/price/' + sym)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.price) {
+                        document.getElementById('priceSymbol').textContent = sym;
+                        document.getElementById('priceValue').textContent = '$' + data.price.toFixed(2);
+                        document.getElementById('pricePreview').style.display = 'block';
+                    } else {
+                        document.getElementById('pricePreview').style.display = 'none';
+                    }
+                });
+        }, 800);
+    }
+});
+</script>
+{% endblock %}

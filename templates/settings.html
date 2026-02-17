@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<div class="page-title">⚙️ Settings</div>
+
+{% if error %}<div class="alert alert-error">❌ {{ error }}</div>{% endif %}
+{% if success %}<div class="alert alert-success">✅ {{ success }}</div>{% endif %}
+
+<div style="display:grid;gap:20px;max-width:600px;">
+
+    <!-- Notification Settings -->
+    <div class="card">
+        <div class="card-body">
+            <h3 style="margin-bottom:16px;font-size:16px;">🔔 Notification Settings</h3>
+            <form method="POST">
+                <input type="hidden" name="action" value="save_notifications">
+                <div class="form-group">
+                    <label>Notification Method</label>
+                    <select name="notification_method">
+                        <option value="both" {{ 'selected' if settings.get('notification_method') == 'both' }}>📧 + 📱 Both Email & Telegram</option>
+                        <option value="email" {{ 'selected' if settings.get('notification_method') == 'email' }}>📧 Email Only</option>
+                        <option value="telegram" {{ 'selected' if settings.get('notification_method') == 'telegram' }}>📱 Telegram Only</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                        <input type="checkbox" name="email_enabled" style="width:auto;"
+                               {{ 'checked' if settings.get('email_enabled') }}>
+                        📧 Enable Email Notifications
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" name="email" value="{{ settings.get('email', '') }}"
+                           placeholder="your@email.com">
+                </div>
+                <hr style="border:none;border-top:1px solid #e5e7eb;margin:16px 0;">
+                <div class="form-group">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                        <input type="checkbox" name="telegram_enabled" style="width:auto;"
+                               {{ 'checked' if settings.get('telegram_enabled') }}>
+                        📱 Enable Telegram Notifications
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>Telegram Chat ID</label>
+                    <input type="text" name="telegram_chat_id"
+                           value="{{ settings.get('telegram_chat_id', '') }}"
+                           placeholder="e.g. 7327563441">
+                    <div class="input-hint">Search @userinfobot on Telegram to get your Chat ID</div>
+                </div>
+                <button type="submit" class="btn btn-primary">💾 Save Settings</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Change Password -->
+    <div class="card">
+        <div class="card-body">
+            <h3 style="margin-bottom:16px;font-size:16px;">🔐 Change Password</h3>
+            <form method="POST">
+                <input type="hidden" name="action" value="change_password">
+                <div class="form-group">
+                    <label>Current Password</label>
+                    <input type="password" name="current_password" placeholder="Enter current password" required>
+                </div>
+                <div class="form-group">
+                    <label>New Password</label>
+                    <input type="password" name="new_password" placeholder="Min 6 characters" required>
+                </div>
+                <div class="form-group">
+                    <label>Confirm New Password</label>
+                    <input type="password" name="confirm_password" placeholder="Repeat new password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">🔐 Change Password</button>
+            </form>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

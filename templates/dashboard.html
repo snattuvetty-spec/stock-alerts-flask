@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-title">
+    📊 Dashboard
+    <small style="font-size:14px;font-weight:400;color:#6b7280;margin-left:8px;">
+        Auto-refreshes every 2 min
+    </small>
+</div>
+
+<!-- Status bar -->
+<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;align-items:center;">
+    {% if not premium %}
+        {% if days_left > 0 %}
+        <span style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;">
+            🎁 Free Trial — {{ days_left }} days left
+        </span>
+        {% endif %}
+        <a href="/settings" style="background:#f39c12;color:white;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;text-decoration:none;">
+            ⭐ Upgrade to Premium
+        </a>
+    {% else %}
+        <span style="background:#27ae60;color:white;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;">
+            ⭐ Premium Active
+        </span>
+    {% endif %}
+    <span style="background:#e8f4f8;color:#2E86AB;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;">
+        📊 {{ alert_count }}/{{ alert_limit }} Alerts
+    </span>
+</div>
+
+{% if not alerts %}
+<div class="card">
+    <div class="card-body" style="text-align:center;padding:48px 20px;">
+        <div style="font-size:48px;margin-bottom:12px;">📭</div>
+        <h3 style="color:#6b7280;margin-bottom:8px;">No alerts yet</h3>
+        <p style="color:#9ca3af;margin-bottom:20px;">Add your first stock alert to get started</p>
+        <a href="/add" class="btn btn-primary">➕ Add First Alert</a>
+    </div>
+</div>
+{% else %}
+
+<div class="card">
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>📈 Symbol</th>
+                    <th>💰 Price</th>
+                    <th>🎯 Target</th>
+                    <th>📊 Type</th>
+                    <th>🔔 Status</th>
+                    <th>📰 News</th>
+                    <th>⚙️ Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in alerts %}
+                <tr>
+                    <td class="symbol">{{ a.symbol }}</td>
+                    <td>
+                        <span class="price">{{ a.price }}</span><br>
+                        <span class="{{ 'change-up' if a.change_up else 'change-dn' }}">
+                            {{ a.change_pct }}
+                        </span>
+                    </td>
+                    <td class="price">${{ "%.2f"|format(a.target) }}</td>
+                    <td>
+                        <span class="badge {{ 'badge-above' if a.type == 'above' else 'badge-below' }}">
+                            {{ '🔼 ABOVE' if a.type == 'above' else '🔽 BELOW' }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if a.status == 'triggered' %}
+                        <span class="status-triggered">🚀 TRIGGERED!</span>
+                        {% else %}
+                        <span class="status-waiting">⏳ Waiting</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ a.news_url }}" target="_blank" class="btn btn-outline btn-sm">📰</a>
+                    </td>
+                    <td style="white-space:nowrap;">
+                        <a href="/edit/{{ a.id }}" class="btn btn-primary btn-sm">✏️ Edit</a>
+                        <button onclick="confirmDelete('{{ a.id }}', '{{ a.symbol }}')"
+                                class="btn btn-danger btn-sm">🗑️ Del</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<footer style="margin-top:24px;padding:16px 0;border:none;text-align:center;font-size:12px;color:#9ca3af;">
+    ⚠️ Stock Alerts Pro provides price notifications only. This is NOT financial advice.<br>
+    Natts Digital is not an AFS licensee. Always consult a licensed financial advisor before making investment decisions.
+</footer>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Auto refresh every 2 minutes
+    setTimeout(() => window.location.reload(), 120000);
+</script>
+{% endblock %}
