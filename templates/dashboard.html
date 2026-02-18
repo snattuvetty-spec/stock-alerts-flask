@@ -9,6 +9,24 @@
     </small>
 </div>
 
+<!-- Setup Banner for New Users -->
+{% if needs_setup %}
+<div style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:20px;border-radius:12px;margin-bottom:20px;box-shadow:0 4px 12px rgba(102,126,234,0.3);">
+    <h3 style="margin:0 0 8px 0;font-size:18px;">👋 Welcome! Let's get you set up</h3>
+    <p style="margin:0 0 16px 0;opacity:0.95;font-size:14px;">
+        To receive stock alerts on Telegram, you need to complete a quick one-time setup:
+    </p>
+    <ol style="margin:0 0 16px 0;padding-left:20px;font-size:14px;line-height:1.8;">
+        <li>Open Telegram and search for <strong>@userinfobot</strong></li>
+        <li>Send any message to get your Chat ID</li>
+        <li>Come back and add it in Settings below</li>
+    </ol>
+    <a href="/settings" style="display:inline-block;background:white;color:#667eea;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;">
+        ⚙️ Go to Settings
+    </a>
+</div>
+{% endif %}
+
 <!-- Status bar -->
 <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;align-items:center;">
     {% if not premium %}

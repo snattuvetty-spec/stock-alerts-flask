@@ -228,9 +228,20 @@ def signup():
                     'email': email,
                     'email_enabled': False,
                     'telegram_enabled': False,
-                    'notification_method': 'both'
+                    'notification_method': 'telegram',
+                    'setup_complete': False  # Track if user has completed setup
                 }).execute()
-                success = "Account created! Please login."
+                success = """🎉 Welcome to Stock Alerts Pro!
+
+Your account is ready! Here's what to do next:
+
+1️⃣ Login below with your username and password
+2️⃣ Go to Settings ⚙️ (top right menu)
+3️⃣ Add your Telegram Chat ID (search @userinfobot on Telegram to get it)
+4️⃣ Enable notifications and click Test
+5️⃣ Start adding stock alerts! 📊
+
+You have 21 days free trial to explore all features."""
             except Exception as e:
                 error = f"Error: {str(e)}"
     return render_template('signup.html', error=error, success=success)
@@ -311,6 +322,14 @@ def dashboard():
             days_left = max(0, (te - datetime.now()).days)
         except:
             pass
+    
+    # Check if user needs to setup Telegram
+    settings = supabase.table('user_settings').select('*').eq('username', username).execute().data
+    needs_setup = False
+    if settings:
+        s = settings[0]
+        # User needs setup if Telegram is not enabled or no Chat ID
+        needs_setup = not s.get('telegram_enabled') or not s.get('telegram_chat_id')
 
     return render_template('dashboard.html',
         alerts=alert_list,
@@ -319,7 +338,8 @@ def dashboard():
         premium=session.get('premium', False),
         days_left=days_left,
         alert_count=len(alerts),
-        alert_limit=10
+        alert_limit=10,
+        needs_setup=needs_setup
     )
 
 # ============================================================
