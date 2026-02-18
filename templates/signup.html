@@ -39,12 +39,12 @@
     </div>
     {% if error %}<div class="alert-error">❌ {{ error }}</div>{% endif %}
     {% if success %}<div class="alert-success">✅ {{ success }} <a href="/">Login here</a></div>{% endif %}
-    <form method="POST">
-        <div class="form-group"><label>Full Name</label><input type="text" name="name" placeholder="Sandeep Nattuvetty" required></div>
-        <div class="form-group"><label>Email</label><input type="email" name="email" placeholder="you@email.com" required></div>
-        <div class="form-group"><label>Username</label><input type="text" name="username" placeholder="Choose a username" required></div>
-        <div class="form-group"><label>Password</label><input type="password" name="password" placeholder="Min 6 characters" required></div>
-        <div class="form-group"><label>Confirm Password</label><input type="password" name="confirm" placeholder="Repeat password" required></div>
+    <form method="POST" autocomplete="off">
+        <div class="form-group"><label>Full Name</label><input type="text" name="name" placeholder="Your Full Name" autocomplete="off" required></div>
+        <div class="form-group"><label>Email</label><input type="email" name="email" placeholder="you@email.com" autocomplete="off" required></div>
+        <div class="form-group"><label>Username</label><input type="text" name="username" placeholder="Choose a username" autocomplete="off" required></div>
+        <div class="form-group"><label>Password</label><input type="password" name="password" placeholder="Min 6 characters" autocomplete="new-password" required></div>
+        <div class="form-group"><label>Confirm Password</label><input type="password" name="confirm" placeholder="Repeat password" autocomplete="new-password" required></div>
         <button type="submit" class="btn">📝 Create Account</button>
     </form>
 </div>

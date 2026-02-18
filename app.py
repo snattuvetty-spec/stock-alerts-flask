@@ -213,25 +213,36 @@ def signup():
         elif len(password) < 6:
             error = "Password must be 6+ characters"
         else:
+            # Check for duplicate username or email
             try:
-                trial_ends = (datetime.now() + timedelta(days=21)).isoformat()
-                supabase.table('users').insert({
-                    'username': username,
-                    'password_hash': hash_password(password),
-                    'email': email,
-                    'name': name,
-                    'trial_ends': trial_ends,
-                    'premium': False
-                }).execute()
-                supabase.table('user_settings').insert({
-                    'username': username,
-                    'email': email,
-                    'email_enabled': False,
-                    'telegram_enabled': False,
-                    'notification_method': 'telegram',
-                    'setup_complete': False  # Track if user has completed setup
-                }).execute()
-                success = """🎉 Welcome to Stock Alerts Pro!
+                existing = supabase.table('users').select('username, email').execute().data
+                usernames = [u['username'].lower() for u in existing]
+                emails = [u['email'].lower() for u in existing]
+                
+                if username.lower() in usernames:
+                    error = "Username already taken. Please choose a different one."
+                elif email.lower() in emails:
+                    error = "Email already registered. Please use a different email or try forgot password."
+                else:
+                    # Create new user
+                    trial_ends = (datetime.now() + timedelta(days=21)).isoformat()
+                    supabase.table('users').insert({
+                        'username': username,
+                        'password_hash': hash_password(password),
+                        'email': email,
+                        'name': name,
+                        'trial_ends': trial_ends,
+                        'premium': False
+                    }).execute()
+                    supabase.table('user_settings').insert({
+                        'username': username,
+                        'email': email,
+                        'email_enabled': False,
+                        'telegram_enabled': False,
+                        'notification_method': 'telegram',
+                        'setup_complete': False
+                    }).execute()
+                    success = """🎉 Welcome to Stock Alerts Pro!
 
 Your account is ready! Here's what to do next:
 
