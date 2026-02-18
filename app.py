@@ -30,15 +30,28 @@ supabase: Client = create_client(
 # HELPERS
 # ============================================================
 def get_stock_price(symbol):
+    """
+    Fetch stock price supporting both US and Australian markets.
+    Auto-adds .AX suffix for Australian stocks.
+    """
     try:
         import yfinance as yf
+        
+        # Try original symbol first (works for US stocks)
         ticker = yf.Ticker(symbol)
         data = ticker.history(period='1d')
+        
+        # If no data, try adding .AX for Australian stocks
+        if data.empty and not symbol.endswith('.AX'):
+            ticker = yf.Ticker(symbol + '.AX')
+            data = ticker.history(period='1d')
+        
         if not data.empty:
             price = float(data['Close'].iloc[-1])
             prev  = float(data['Open'].iloc[-1])
             change_pct = ((price - prev) / prev) * 100
             return price, change_pct
+        
         return None, None
     except:
         return None, None
@@ -336,4 +349,5 @@ def settings():
     )
 
 if __name__ == '__main__':
-    app.run(debug=True, port=8502, use_reloader=False)
+    port = int(os.getenv('PORT', 8502))
+    app.run(host='0.0.0.0', port=port, debug=False)
