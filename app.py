@@ -484,6 +484,39 @@ def delete_alert(alert_id):
     return redirect(url_for('dashboard'))
 
 # ============================================================
+# QUICK UPDATE ALERT (for inline editing)
+# ============================================================
+@app.route('/api/update_alert/<alert_id>', methods=['POST'])
+@login_required
+def quick_update_alert(alert_id):
+    """Quick update endpoint for inline editing"""
+    try:
+        data = request.get_json()
+        target = data.get('target')
+        alert_type = data.get('type')
+        
+        # Validate
+        if target is not None:
+            target = float(target)
+            if target <= 0:
+                return jsonify({'success': False, 'error': 'Target must be positive'}), 400
+        
+        # Build update dict
+        updates = {}
+        if target is not None:
+            updates['target'] = target
+        if alert_type in ['above', 'below']:
+            updates['type'] = alert_type
+        
+        if updates:
+            supabase.table('alerts').update(updates).eq('id', alert_id).execute()
+            return jsonify({'success': True})
+        
+        return jsonify({'success': False, 'error': 'No valid updates'}), 400
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# ============================================================
 # SETTINGS
 # ============================================================
 @app.route('/settings', methods=['GET', 'POST'])

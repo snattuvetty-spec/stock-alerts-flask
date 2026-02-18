@@ -75,7 +75,7 @@
             </thead>
             <tbody>
                 {% for a in alerts %}
-                <tr>
+                <tr id="row-{{ a.id }}">
                     <td class="symbol">{{ a.symbol }}</td>
                     <td>
                         <span class="price">{{ a.price }}</span><br>
@@ -83,8 +83,20 @@
                             {{ a.change_pct }}
                         </span>
                     </td>
-                    <td class="price">${{ "%.2f"|format(a.target) }}</td>
-                    <td>
+                    <td class="price editable" 
+                        data-alert-id="{{ a.id }}" 
+                        data-field="target" 
+                        data-value="{{ a.target }}"
+                        title="Double-click to edit"
+                        style="cursor:pointer;">
+                        ${{ "%.2f"|format(a.target) }}
+                    </td>
+                    <td class="editable" 
+                        data-alert-id="{{ a.id }}" 
+                        data-field="type" 
+                        data-value="{{ a.type }}"
+                        title="Double-click to toggle"
+                        style="cursor:pointer;">
                         <span class="badge {{ 'badge-above' if a.type == 'above' else 'badge-below' }}">
                             {{ '🔼 ABOVE' if a.type == 'above' else '🔽 BELOW' }}
                         </span>
@@ -122,5 +134,84 @@
 <script>
     // Auto refresh every 2 minutes
     setTimeout(() => window.location.reload(), 120000);
+    
+    // Inline editing for target and type
+    document.querySelectorAll('.editable').forEach(cell => {
+        cell.addEventListener('dblclick', function() {
+            const alertId = this.dataset.alertId;
+            const field = this.dataset.field;
+            const currentValue = this.dataset.value;
+            
+            if (field === 'target') {
+                // Edit target price
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.step = '0.01';
+                input.value = currentValue;
+                input.style.width = '100px';
+                input.style.padding = '4px 8px';
+                input.style.fontSize = '14px';
+                input.style.border = '2px solid #2E86AB';
+                input.style.borderRadius = '4px';
+                
+                const originalContent = this.innerHTML;
+                this.innerHTML = '';
+                this.appendChild(input);
+                input.focus();
+                input.select();
+                
+                const save = async () => {
+                    const newValue = parseFloat(input.value);
+                    if (newValue && newValue > 0) {
+                        const response = await fetch(`/api/update_alert/${alertId}`, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({target: newValue})
+                        });
+                        if (response.ok) {
+                            this.innerHTML = '$' + newValue.toFixed(2);
+                            this.dataset.value = newValue;
+                        } else {
+                            alert('Update failed!');
+                            this.innerHTML = originalContent;
+                        }
+                    } else {
+                        this.innerHTML = originalContent;
+                    }
+                };
+                
+                input.addEventListener('blur', save);
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') save();
+                    if (e.key === 'Escape') this.innerHTML = originalContent;
+                });
+                
+            } else if (field === 'type') {
+                // Toggle type above/below
+                const newType = currentValue === 'above' ? 'below' : 'above';
+                
+                fetch(`/api/update_alert/${alertId}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({type: newType})
+                }).then(response => {
+                    if (response.ok) {
+                        // Update display
+                        const badge = this.querySelector('.badge');
+                        if (newType === 'above') {
+                            badge.className = 'badge badge-above';
+                            badge.textContent = '🔼 ABOVE';
+                        } else {
+                            badge.className = 'badge badge-below';
+                            badge.textContent = '🔽 BELOW';
+                        }
+                        this.dataset.value = newType;
+                    } else {
+                        alert('Update failed!');
+                    }
+                });
+            }
+        });
+    });
 </script>
 {% endblock %}
