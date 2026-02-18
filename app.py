@@ -59,36 +59,27 @@ def check_alerts_job():
                 
                 settings = settings_result.data[0]
                 user = user_result.data[0]
-                method = settings.get('notification_method', 'both')
                 
-                # Send email if enabled
-                if settings.get('email_enabled') and method in ['email', 'both']:
-                    email = settings.get('email') or user.get('email')
-                    if email:
-                        subject = f"🚀 Alert Triggered: {alert['symbol']}"
-                        body = f"""
-Hi {user['name']},
-
-Your price alert has been triggered!
-
-Symbol: {alert['symbol']}
-Target: ${alert['target']:.2f} ({alert['type']})
-Current Price: ${price:.2f}
-
-Login to manage your alerts: {os.getenv('APP_URL', 'https://stock-alerts-flask.onrender.com')}
-
-Natts Digital - Stock Alerts Pro
-"""
-                        send_email(email, subject, body)
-                
-                # Send Telegram if enabled
-                if settings.get('telegram_enabled') and method in ['telegram', 'both']:
+                # Send Telegram notification
+                if settings.get('telegram_enabled'):
                     chat_id = settings.get('telegram_chat_id') or os.getenv('TELEGRAM_CHAT_ID')
                     if chat_id:
-                        msg = f"🚀 Alert Triggered!\n\n{alert['symbol']} is now ${price:.2f}\nTarget was ${alert['target']:.2f} ({alert['type']})"
+                        direction = "🔼 above" if alert['type'] == 'above' else "🔽 below"
+                        msg = f"""🚀 Alert Triggered!
+
+Hi {user['name']},
+
+{alert['symbol']} crossed your target!
+
+💰 Current Price: ${price:.2f}
+🎯 Your Target: ${alert['target']:.2f} {direction}
+
+Manage alerts: https://stock-alerts-flask.onrender.com
+
+Natts Digital"""
                         send_telegram(msg, chat_id)
                 
-                # Disable alert after triggering (so it doesn't spam)
+                # Disable alert after triggering (prevents spam)
                 supabase.table('alerts').update({'enabled': False}).eq('id', alert['id']).execute()
                 
     except Exception as e:
@@ -158,14 +149,18 @@ def send_email(to, subject, body):
         msg['To'] = to
         msg['Subject'] = subject
         msg.attach(MIMEText(body, 'plain'))
+        
+        # Add timeout to prevent hanging
         server = smtplib.SMTP(os.getenv('SMTP_SERVER', 'smtp.gmail.com'),
-                              int(os.getenv('SMTP_PORT', 587)))
+                              int(os.getenv('SMTP_PORT', 587)),
+                              timeout=10)
         server.starttls()
         server.login(os.getenv('EMAIL_SENDER'), os.getenv('EMAIL_PASSWORD'))
         server.sendmail(os.getenv('EMAIL_SENDER'), to, msg.as_string())
         server.quit()
         return True
-    except:
+    except Exception as e:
+        print(f"Email error: {str(e)}")
         return False
 
 def login_required(f):
@@ -407,48 +402,28 @@ def settings():
 
         if action == 'save_notifications':
             supabase.table('user_settings').update({
-                'email': request.form.get('email', ''),
-                'email_enabled': 'email_enabled' in request.form,
                 'telegram_chat_id': request.form.get('telegram_chat_id', ''),
                 'telegram_enabled': 'telegram_enabled' in request.form,
-                'notification_method': request.form.get('notification_method', 'both')
+                'notification_method': 'telegram'
             }).eq('username', username).execute()
             success = "Settings saved!"
 
         elif action == 'test_notification':
             user = supabase.table('users').select('*').eq('username', username).execute().data[0]
-            method = user_settings.get('notification_method', 'both')
-            results = []
             
-            # Test email
-            if user_settings.get('email_enabled') and method in ['email', 'both']:
-                email = user_settings.get('email') or user.get('email')
-                if email:
-                    sent = send_email(email, "🧪 Test Alert - Stock Alerts Pro",
-                        f"Hi {user['name']},\n\nThis is a test notification from Stock Alerts Pro.\n\nIf you received this, your email alerts are working!\n\nNatts Digital")
-                    if sent:
-                        results.append(f"✅ Test email sent to {email}")
-                    else:
-                        results.append("❌ Email failed - check EMAIL_PASSWORD env variable")
-                else:
-                    results.append("❌ No email address configured")
-            
-            # Test Telegram
-            if user_settings.get('telegram_enabled') and method in ['telegram', 'both']:
+            # Test Telegram only
+            if user_settings.get('telegram_enabled'):
                 chat_id = user_settings.get('telegram_chat_id') or os.getenv('TELEGRAM_CHAT_ID')
                 if chat_id:
-                    sent = send_telegram(f"🧪 Test Alert\n\nThis is a test from Stock Alerts Pro.\n\nIf you received this, your Telegram alerts are working!", chat_id)
+                    sent = send_telegram(f"🧪 Test Alert\n\nHi {user['name']}!\n\nThis is a test from Stock Alerts Pro.\n\nIf you received this, your Telegram alerts are working perfectly! ✅", chat_id)
                     if sent:
-                        results.append(f"✅ Test Telegram sent to Chat ID {chat_id}")
+                        success = f"✅ Test notification sent to Telegram Chat ID {chat_id}"
                     else:
-                        results.append("❌ Telegram failed - check TELEGRAM_BOT_TOKEN")
+                        error = "❌ Telegram failed - check TELEGRAM_BOT_TOKEN on Render"
                 else:
-                    results.append("❌ No Telegram Chat ID configured")
-            
-            if results:
-                success = "<br>".join(results)
+                    error = "❌ No Telegram Chat ID configured. Enter it above and save first."
             else:
-                error = "❌ Enable at least one notification method first"
+                error = "❌ Enable Telegram notifications first (check the box and save)"
 
         elif action == 'change_password':
             curr = request.form.get('current_password')

@@ -8,33 +8,13 @@
 
 <div style="display:grid;gap:20px;max-width:600px;">
 
-    <!-- Notification Settings -->
+    <!-- Telegram Notifications -->
     <div class="card">
         <div class="card-body">
-            <h3 style="margin-bottom:16px;font-size:16px;">🔔 Notification Settings</h3>
+            <h3 style="margin-bottom:16px;font-size:16px;">📱 Telegram Notifications</h3>
             <form method="POST">
                 <input type="hidden" name="action" value="save_notifications">
-                <div class="form-group">
-                    <label>Notification Method</label>
-                    <select name="notification_method">
-                        <option value="both" {{ 'selected' if settings.get('notification_method') == 'both' }}>📧 + 📱 Both Email & Telegram</option>
-                        <option value="email" {{ 'selected' if settings.get('notification_method') == 'email' }}>📧 Email Only</option>
-                        <option value="telegram" {{ 'selected' if settings.get('notification_method') == 'telegram' }}>📱 Telegram Only</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-                        <input type="checkbox" name="email_enabled" style="width:auto;"
-                               {{ 'checked' if settings.get('email_enabled') }}>
-                        📧 Enable Email Notifications
-                    </label>
-                </div>
-                <div class="form-group">
-                    <label>Email Address</label>
-                    <input type="email" name="email" value="{{ settings.get('email', '') }}"
-                           placeholder="your@email.com">
-                </div>
-                <hr style="border:none;border-top:1px solid #e5e7eb;margin:16px 0;">
+                
                 <div class="form-group">
                     <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
                         <input type="checkbox" name="telegram_enabled" style="width:auto;"
@@ -42,6 +22,7 @@
                         📱 Enable Telegram Notifications
                     </label>
                 </div>
+                
                 <div class="form-group">
                     <label>Telegram Chat ID</label>
                     <input type="text" name="telegram_chat_id"
@@ -49,6 +30,7 @@
                            placeholder="e.g. 7327563441">
                     <div class="input-hint">Search @userinfobot on Telegram to get your Chat ID</div>
                 </div>
+                
                 <button type="submit" class="btn btn-primary">💾 Save Settings</button>
             </form>
             
@@ -60,9 +42,13 @@
                     🧪 Send Test Notification
                 </button>
                 <div class="input-hint" style="margin-top:8px;">
-                    Sends a test alert to verify your notification settings are working
+                    Sends a test alert to verify your Telegram notifications are working
                 </div>
             </form>
+            
+            <div class="alert alert-info" style="margin-top:16px;font-size:13px;">
+                📧 <strong>Email notifications:</strong> Coming soon! Currently Telegram-only for instant, reliable alerts.
+            </div>
         </div>
     </div>
 
