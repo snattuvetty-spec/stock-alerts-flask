@@ -172,11 +172,18 @@ def forgot():
                 supabase.table('users').update(
                     {'password_hash': hash_password(temp_pass)}
                 ).eq('username', found['username']).execute()
-                body = f"Hi {found['name']},\n\nYour temporary password: {temp_pass}\n\nPlease login and change it in Settings.\n\nNatts Digital"
-                send_email(email, "Stock Alerts Pro - Password Reset", body)
-                success = f"Temporary password sent to {email}"
+                
+                # Try to send email
+                email_sent = send_email(email, "Stock Alerts Pro - Password Reset",
+                    f"Hi {found['name']},\n\nYour temporary password: {temp_pass}\n\nPlease login and change it in Settings.\n\nNatts Digital")
+                
+                if email_sent:
+                    success = f"Temporary password sent to {email}"
+                else:
+                    # Email failed but password was changed - show temp password
+                    success = f"Email failed to send. Your temporary password is: {temp_pass}"
         except Exception as e:
-            error = str(e)
+            error = f"Error: {str(e)}"
     return render_template('forgot.html', error=error, success=success)
 
 @app.route('/logout')
