@@ -27,6 +27,95 @@ supabase: Client = create_client(
 )
 
 # ============================================================
+# BACKGROUND ALERT CHECKER
+# ============================================================
+from apscheduler.schedulers.background import BackgroundScheduler
+
+def check_alerts_job():
+    """Background job to check all alerts and send notifications"""
+    try:
+        # Get all enabled alerts
+        all_alerts = supabase.table('alerts').select('*').eq('enabled', True).execute().data
+        
+        for alert in all_alerts:
+            price, _ = get_stock_price(alert['symbol'])
+            if not price:
+                continue
+            
+            triggered = False
+            if alert['type'] == 'above' and price >= alert['target']:
+                triggered = True
+            elif alert['type'] == 'below' and price <= alert['target']:
+                triggered = True
+            
+            if triggered:
+                # Get user settings
+                username = alert['username']
+                settings_result = supabase.table('user_settings').select('*').eq('username', username).execute()
+                user_result = supabase.table('users').select('*').eq('username', username).execute()
+                
+                if not settings_result.data or not user_result.data:
+                    continue
+                
+                settings = settings_result.data[0]
+                user = user_result.data[0]
+                method = settings.get('notification_method', 'both')
+                
+                # Send email if enabled
+                if settings.get('email_enabled') and method in ['email', 'both']:
+                    email = settings.get('email') or user.get('email')
+                    if email:
+                        subject = f"🚀 Alert Triggered: {alert['symbol']}"
+                        body = f"""
+Hi {user['name']},
+
+Your price alert has been triggered!
+
+Symbol: {alert['symbol']}
+Target: ${alert['target']:.2f} ({alert['type']})
+Current Price: ${price:.2f}
+
+Login to manage your alerts: {os.getenv('APP_URL', 'https://stock-alerts-flask.onrender.com')}
+
+Natts Digital - Stock Alerts Pro
+"""
+                        send_email(email, subject, body)
+                
+                # Send Telegram if enabled
+                if settings.get('telegram_enabled') and method in ['telegram', 'both']:
+                    chat_id = settings.get('telegram_chat_id') or os.getenv('TELEGRAM_CHAT_ID')
+                    if chat_id:
+                        msg = f"🚀 Alert Triggered!\n\n{alert['symbol']} is now ${price:.2f}\nTarget was ${alert['target']:.2f} ({alert['type']})"
+                        send_telegram(msg, chat_id)
+                
+                # Disable alert after triggering (so it doesn't spam)
+                supabase.table('alerts').update({'enabled': False}).eq('id', alert['id']).execute()
+                
+    except Exception as e:
+        print(f"Alert checker error: {str(e)}")
+
+def send_telegram(message, chat_id):
+    """Send Telegram notification"""
+    try:
+        bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
+        if not bot_token:
+            return False
+        url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+        requests.post(url, json={'chat_id': chat_id, 'text': message})
+        return True
+    except:
+        return False
+
+# Start background scheduler
+scheduler = BackgroundScheduler()
+scheduler.add_job(func=check_alerts_job, trigger="interval", minutes=5)
+scheduler.start()
+
+# Shutdown scheduler on app exit
+import atexit
+atexit.register(lambda: scheduler.shutdown())
+
+# ============================================================
 # HELPERS
 # ============================================================
 def get_stock_price(symbol):
