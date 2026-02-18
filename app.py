@@ -136,6 +136,30 @@ def get_stock_price(symbol):
     except:
         return None, None
 
+def get_stock_sparkline(symbol):
+    """Get 3-month historical prices for sparkline chart"""
+    try:
+        import yfinance as yf
+        
+        # Try original symbol first
+        ticker = yf.Ticker(symbol)
+        data = ticker.history(period='3mo')
+        
+        # If no data, try .AX suffix
+        if data.empty and not symbol.endswith('.AX'):
+            ticker = yf.Ticker(symbol + '.AX')
+            data = ticker.history(period='3mo')
+        
+        if not data.empty:
+            # Get closing prices as list
+            prices = data['Close'].tolist()
+            # Return last 60 data points (roughly 3 months of trading days)
+            return prices[-60:] if len(prices) > 60 else prices
+        
+        return []
+    except:
+        return []
+
 def hash_password(password):
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
@@ -376,6 +400,8 @@ def dashboard():
     alert_list = []
     for a in alerts:
         price, change_pct = get_stock_price(a['symbol'])
+        sparkline_data = get_stock_sparkline(a['symbol'])
+        
         status = 'waiting'
         if price:
             if a['type'] == 'above' and price >= a['target']:
@@ -388,7 +414,9 @@ def dashboard():
             'change_pct': f"{change_pct:+.2f}%" if change_pct else "",
             'change_up': change_pct >= 0 if change_pct else True,
             'status': status,
-            'news_url': f"https://finance.yahoo.com/quote/{a['symbol']}/news"
+            'news_url': f"https://finance.yahoo.com/quote/{a['symbol']}/news",
+            'chart_url': f"https://finance.yahoo.com/quote/{a['symbol']}/chart",
+            'sparkline': sparkline_data
         })
 
     # Account status

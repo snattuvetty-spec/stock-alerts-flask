@@ -65,6 +65,7 @@
             <thead>
                 <tr>
                     <th>📈 Symbol</th>
+                    <th>📊 3M Chart</th>
                     <th>💰 Price</th>
                     <th>🎯 Target</th>
                     <th>📊 Type</th>
@@ -77,6 +78,45 @@
                 {% for a in alerts %}
                 <tr id="row-{{ a.id }}">
                     <td class="symbol">{{ a.symbol }}</td>
+                    <td style="padding:8px;">
+                        {% if a.sparkline %}
+                        <a href="{{ a.chart_url }}" target="_blank" title="Click for detailed chart">
+                            <canvas id="spark-{{ a.id }}" width="100" height="30" style="cursor:pointer;"></canvas>
+                        </a>
+                        <script>
+                        (function() {
+                            const canvas = document.getElementById('spark-{{ a.id }}');
+                            const ctx = canvas.getContext('2d');
+                            const data = {{ a.sparkline|tojson }};
+                            
+                            if (data && data.length > 0) {
+                                const min = Math.min(...data);
+                                const max = Math.max(...data);
+                                const range = max - min || 1;
+                                const width = canvas.width;
+                                const height = canvas.height;
+                                const step = width / (data.length - 1);
+                                
+                                // Draw line
+                                ctx.strokeStyle = data[data.length-1] >= data[0] ? '#27ae60' : '#e74c3c';
+                                ctx.lineWidth = 1.5;
+                                ctx.beginPath();
+                                
+                                data.forEach((price, i) => {
+                                    const x = i * step;
+                                    const y = height - ((price - min) / range) * height;
+                                    if (i === 0) ctx.moveTo(x, y);
+                                    else ctx.lineTo(x, y);
+                                });
+                                
+                                ctx.stroke();
+                            }
+                        })();
+                        </script>
+                        {% else %}
+                        <a href="{{ a.chart_url }}" target="_blank" class="btn btn-outline btn-sm" style="font-size:10px;">Chart</a>
+                        {% endif %}
+                    </td>
                     <td>
                         <span class="price">{{ a.price }}</span><br>
                         <span class="{{ 'change-up' if a.change_up else 'change-dn' }}">
