@@ -418,6 +418,7 @@ def settings():
         elif action == 'test_notification':
             user = supabase.table('users').select('*').eq('username', username).execute().data[0]
             method = user_settings.get('notification_method', 'both')
+            results = []
             
             # Test email
             if user_settings.get('email_enabled') and method in ['email', 'both']:
@@ -426,11 +427,11 @@ def settings():
                     sent = send_email(email, "🧪 Test Alert - Stock Alerts Pro",
                         f"Hi {user['name']},\n\nThis is a test notification from Stock Alerts Pro.\n\nIf you received this, your email alerts are working!\n\nNatts Digital")
                     if sent:
-                        success = f"✅ Test email sent to {email}"
+                        results.append(f"✅ Test email sent to {email}")
                     else:
-                        error = "❌ Failed to send test email. Check your settings."
+                        results.append("❌ Email failed - check EMAIL_PASSWORD env variable")
                 else:
-                    error = "❌ No email address configured"
+                    results.append("❌ No email address configured")
             
             # Test Telegram
             if user_settings.get('telegram_enabled') and method in ['telegram', 'both']:
@@ -438,13 +439,15 @@ def settings():
                 if chat_id:
                     sent = send_telegram(f"🧪 Test Alert\n\nThis is a test from Stock Alerts Pro.\n\nIf you received this, your Telegram alerts are working!", chat_id)
                     if sent:
-                        success = (success or "") + f" ✅ Test Telegram sent to {chat_id}"
+                        results.append(f"✅ Test Telegram sent to Chat ID {chat_id}")
                     else:
-                        error = "❌ Failed to send Telegram. Check your Chat ID."
+                        results.append("❌ Telegram failed - check TELEGRAM_BOT_TOKEN")
                 else:
-                    error = "❌ No Telegram Chat ID configured"
+                    results.append("❌ No Telegram Chat ID configured")
             
-            if not user_settings.get('email_enabled') and not user_settings.get('telegram_enabled'):
+            if results:
+                success = "<br>".join(results)
+            else:
                 error = "❌ Enable at least one notification method first"
 
         elif action == 'change_password':

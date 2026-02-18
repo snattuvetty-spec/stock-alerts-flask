@@ -4,7 +4,7 @@
 <div class="page-title">⚙️ Settings</div>
 
 {% if error %}<div class="alert alert-error">❌ {{ error }}</div>{% endif %}
-{% if success %}<div class="alert alert-success">✅ {{ success }}</div>{% endif %}
+{% if success %}<div class="alert alert-success">{{ success|safe }}</div>{% endif %}
 
 <div style="display:grid;gap:20px;max-width:600px;">
 
