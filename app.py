@@ -262,34 +262,101 @@ def forgot():
     error = None
     success = None
     if request.method == 'POST':
-        username = request.form.get('username', '').strip()
-        email    = request.form.get('email', '').strip()
-        try:
-            result = supabase.table('users').select('*').execute()
-            found = None
-            for u in result.data:
-                if u['username'].lower() == username.lower() and u['email'].lower() == email.lower():
-                    found = u
-                    break
-            if not found:
-                error = "No account found with that username and email"
-            else:
-                temp_pass = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
-                supabase.table('users').update(
-                    {'password_hash': hash_password(temp_pass)}
-                ).eq('username', found['username']).execute()
+        action = request.form.get('action', 'password')
+        email = request.form.get('email', '').strip()
+        
+        if action == 'username':
+            # Forgot Username - only need email
+            try:
+                result = supabase.table('users').select('*').execute()
+                found = None
+                for u in result.data:
+                    if u['email'].lower() == email.lower():
+                        found = u
+                        break
                 
-                # Try to send email
-                email_sent = send_email(email, "Stock Alerts Pro - Password Reset",
-                    f"Hi {found['name']},\n\nYour temporary password: {temp_pass}\n\nPlease login and change it in Settings.\n\nNatts Digital")
-                
-                if email_sent:
-                    success = f"Temporary password sent to {email}"
+                if not found:
+                    error = "No account found with that email address"
                 else:
-                    # Email failed but password was changed - show temp password
-                    success = f"Email failed to send. Your temporary password is: {temp_pass}"
-        except Exception as e:
-            error = f"Error: {str(e)}"
+                    # Try to send via Telegram
+                    settings = supabase.table('user_settings').select('*').eq('username', found['username']).execute()
+                    telegram_sent = False
+                    
+                    if settings.data:
+                        chat_id = settings.data[0].get('telegram_chat_id')
+                        if chat_id:
+                            msg = f"""📋 Username Recovery - Stock Alerts Pro
+
+Hi {found['name']},
+
+Your username is: {found['username']}
+
+Login at: https://stock-alerts-flask.onrender.com
+
+Natts Digital"""
+                            telegram_sent = send_telegram(msg, chat_id)
+                    
+                    if telegram_sent:
+                        success = f"✅ Your username has been sent to your Telegram!"
+                    else:
+                        success = f"""✅ Username found!
+
+Your username is: <strong style="font-size:18px;background:#f0f0f0;padding:8px 12px;border-radius:4px;display:inline-block;margin:8px 0;">{found['username']}</strong>
+
+You can now login below."""
+            except Exception as e:
+                error = f"Error: {str(e)}"
+        
+        else:
+            # Forgot Password - need username and email
+            username = request.form.get('username', '').strip()
+            try:
+                result = supabase.table('users').select('*').execute()
+                found = None
+                for u in result.data:
+                    if u['username'].lower() == username.lower() and u['email'].lower() == email.lower():
+                        found = u
+                        break
+                if not found:
+                    error = "No account found with that username and email combination"
+                else:
+                    # Generate temporary password
+                    temp_pass = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
+                    supabase.table('users').update(
+                        {'password_hash': hash_password(temp_pass)}
+                    ).eq('username', found['username']).execute()
+                    
+                    # Try to send via Telegram
+                    settings = supabase.table('user_settings').select('*').eq('username', found['username']).execute()
+                    telegram_sent = False
+                    
+                    if settings.data:
+                        chat_id = settings.data[0].get('telegram_chat_id')
+                        if chat_id:
+                            msg = f"""🔐 Password Reset - Stock Alerts Pro
+
+Hi {found['name']},
+
+Your temporary password is: {temp_pass}
+
+Please login and change it in Settings immediately.
+
+Login at: https://stock-alerts-flask.onrender.com
+
+Natts Digital"""
+                            telegram_sent = send_telegram(msg, chat_id)
+                    
+                    if telegram_sent:
+                        success = f"✅ Temporary password sent to your Telegram! Check your messages."
+                    else:
+                        success = f"""⚠️ Your password has been reset!
+
+Your temporary password is: <strong style="font-size:18px;background:#f0f0f0;padding:8px 12px;border-radius:4px;display:inline-block;margin:8px 0;">{temp_pass}</strong>
+
+Please copy this, login, and change it in Settings immediately."""
+            except Exception as e:
+                error = f"Error: {str(e)}"
+    
     return render_template('forgot.html', error=error, success=success)
 
 @app.route('/logout')

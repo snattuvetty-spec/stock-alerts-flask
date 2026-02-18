@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Forgot Password — Stock Alerts Pro</title>
+    <title>Account Recovery — Stock Alerts Pro</title>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root { --brand: #2E86AB; --brand-dark: #1a6a8a; --border: #e5e7eb; --text: #1a1a2e; --text-muted: #6b7280; }
@@ -15,6 +15,8 @@
         .tabs { display: flex; border-bottom: 2px solid var(--border); margin-bottom: 24px; }
         .tab { flex: 1; text-align: center; padding: 10px; font-size: 14px; font-weight: 600; cursor: pointer; color: var(--text-muted); text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.15s; }
         .tab.active { color: var(--brand); border-bottom-color: var(--brand); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
         .form-group { margin-bottom: 16px; }
         label { display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
         input { width: 100%; padding: 11px 14px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; font-family: 'DM Sans', sans-serif; outline: none; transition: border 0.15s; }
@@ -22,30 +24,73 @@
         .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; background: var(--brand); color: white; font-size: 15px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: background 0.15s; margin-top: 4px; }
         .btn:hover { background: var(--brand-dark); }
         .alert-error { background: #fde8e8; color: #c0392b; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 16px; }
-        .alert-success { background: #e8f5e9; color: #2e7d32; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 16px; }
+        .alert-success { background: #e8f5e9; color: #2e7d32; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 16px; line-height: 1.6; }
         footer { text-align: center; font-size: 12px; color: var(--text-muted); margin-top: 16px; }
+        .hint { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.5; }
     </style>
 </head>
 <body>
 <div class="auth-card">
     <div class="auth-logo">
-        <div style="font-size:40px;">🔑</div>
-        <h1>Reset Password</h1>
+        <div style="font-size:40px;">🔐</div>
+        <h1>Account Recovery</h1>
     </div>
+    
     <div class="tabs">
         <a href="/" class="tab">🔐 Login</a>
-        <a href="/signup" class="tab">📝 Sign Up</a>
-        <a href="/forgot" class="tab active">🔑 Forgot</a>
+        <div class="tab active" onclick="showTab('username')">📋 Username</div>
+        <div class="tab" onclick="showTab('password')">🔑 Password</div>
     </div>
+    
     {% if error %}<div class="alert-error">❌ {{ error }}</div>{% endif %}
-    {% if success %}<div class="alert-success">✅ {{ success }}. <a href="/">Login here</a></div>{% endif %}
-    <p style="font-size:13px;color:#6b7280;margin-bottom:16px;">Enter your username and email to receive a temporary password.</p>
-    <form method="POST">
-        <div class="form-group"><label>Username</label><input type="text" name="username" placeholder="Your username" required></div>
-        <div class="form-group"><label>Email Address</label><input type="email" name="email" placeholder="Your email" required></div>
-        <button type="submit" class="btn">📧 Send Reset Password</button>
-    </form>
+    {% if success %}<div class="alert-success">{{ success|safe }} <a href="/" style="text-decoration:underline;">Login here</a></div>{% endif %}
+    
+    <!-- Forgot Username Tab -->
+    <div id="username-tab" class="tab-content active">
+        <p class="hint">Enter your email address to recover your username.</p>
+        <form method="POST">
+            <input type="hidden" name="action" value="username">
+            <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" name="email" placeholder="Your registered email" required>
+            </div>
+            <button type="submit" class="btn">📋 Get My Username</button>
+        </form>
+    </div>
+    
+    <!-- Forgot Password Tab -->
+    <div id="password-tab" class="tab-content">
+        <p class="hint">Enter your username and email to reset your password.</p>
+        <form method="POST">
+            <input type="hidden" name="action" value="password">
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" name="username" placeholder="Your username" required>
+            </div>
+            <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" name="email" placeholder="Your registered email" required>
+            </div>
+            <button type="submit" class="btn">🔑 Reset Password</button>
+        </form>
+    </div>
 </div>
+
 <footer>© 2026 Natts Digital. All rights reserved.</footer>
+
+<script>
+function showTab(tab) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    
+    if (tab === 'username') {
+        document.getElementById('username-tab').classList.add('active');
+        document.querySelectorAll('.tab')[1].classList.add('active');
+    } else {
+        document.getElementById('password-tab').classList.add('active');
+        document.querySelectorAll('.tab')[2].classList.add('active');
+    }
+}
+</script>
 </body>
 </html>
