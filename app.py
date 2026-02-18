@@ -137,27 +137,30 @@ def get_stock_price(symbol):
         return None, None
 
 def get_stock_sparkline(symbol):
-    """Get 3-month historical prices for sparkline chart"""
+    """Get 1-month historical prices for sparkline chart (faster)"""
     try:
         import yfinance as yf
         
         # Try original symbol first
         ticker = yf.Ticker(symbol)
-        data = ticker.history(period='3mo')
+        data = ticker.history(period='1mo')  # Changed from 3mo to 1mo for speed
         
         # If no data, try .AX suffix
         if data.empty and not symbol.endswith('.AX'):
             ticker = yf.Ticker(symbol + '.AX')
-            data = ticker.history(period='3mo')
+            data = ticker.history(period='1mo')
         
-        if not data.empty:
-            # Get closing prices as list
+        if not data.empty and len(data) > 0:
+            # Get closing prices as list (max 20 points for speed)
             prices = data['Close'].tolist()
-            # Return last 60 data points (roughly 3 months of trading days)
-            return prices[-60:] if len(prices) > 60 else prices
+            # Sample every nth point to get ~20 data points
+            step = max(1, len(prices) // 20)
+            sampled = [prices[i] for i in range(0, len(prices), step)]
+            return sampled if sampled else []
         
         return []
-    except:
+    except Exception as e:
+        print(f"Sparkline error for {symbol}: {str(e)}")
         return []
 
 def hash_password(password):

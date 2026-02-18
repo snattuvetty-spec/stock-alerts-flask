@@ -78,10 +78,10 @@
                 {% for a in alerts %}
                 <tr id="row-{{ a.id }}">
                     <td class="symbol">{{ a.symbol }}</td>
-                    <td style="padding:8px;">
-                        {% if a.sparkline %}
-                        <a href="{{ a.chart_url }}" target="_blank" title="Click for detailed chart">
-                            <canvas id="spark-{{ a.id }}" width="100" height="30" style="cursor:pointer;"></canvas>
+                    <td style="padding:8px;text-align:center;">
+                        {% if a.sparkline and a.sparkline|length > 1 %}
+                        <a href="{{ a.chart_url }}" target="_blank" title="Click for detailed chart on Yahoo Finance">
+                            <canvas id="spark-{{ a.id }}" width="80" height="25" style="cursor:pointer;display:block;"></canvas>
                         </a>
                         <script>
                         (function() {
@@ -89,7 +89,7 @@
                             const ctx = canvas.getContext('2d');
                             const data = {{ a.sparkline|tojson }};
                             
-                            if (data && data.length > 0) {
+                            if (data && data.length > 1) {
                                 const min = Math.min(...data);
                                 const max = Math.max(...data);
                                 const range = max - min || 1;
@@ -97,14 +97,17 @@
                                 const height = canvas.height;
                                 const step = width / (data.length - 1);
                                 
+                                // Determine color based on trend
+                                const color = data[data.length-1] >= data[0] ? '#27ae60' : '#e74c3c';
+                                
                                 // Draw line
-                                ctx.strokeStyle = data[data.length-1] >= data[0] ? '#27ae60' : '#e74c3c';
-                                ctx.lineWidth = 1.5;
+                                ctx.strokeStyle = color;
+                                ctx.lineWidth = 2;
                                 ctx.beginPath();
                                 
                                 data.forEach((price, i) => {
                                     const x = i * step;
-                                    const y = height - ((price - min) / range) * height;
+                                    const y = height - ((price - min) / range) * (height - 4) - 2;
                                     if (i === 0) ctx.moveTo(x, y);
                                     else ctx.lineTo(x, y);
                                 });
@@ -114,7 +117,9 @@
                         })();
                         </script>
                         {% else %}
-                        <a href="{{ a.chart_url }}" target="_blank" class="btn btn-outline btn-sm" style="font-size:10px;">Chart</a>
+                        <a href="{{ a.chart_url }}" target="_blank" class="btn btn-outline btn-sm" style="font-size:11px;padding:4px 8px;">
+                            📊 Chart
+                        </a>
                         {% endif %}
                     </td>
                     <td>
