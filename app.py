@@ -415,6 +415,38 @@ def settings():
             }).eq('username', username).execute()
             success = "Settings saved!"
 
+        elif action == 'test_notification':
+            user = supabase.table('users').select('*').eq('username', username).execute().data[0]
+            method = user_settings.get('notification_method', 'both')
+            
+            # Test email
+            if user_settings.get('email_enabled') and method in ['email', 'both']:
+                email = user_settings.get('email') or user.get('email')
+                if email:
+                    sent = send_email(email, "🧪 Test Alert - Stock Alerts Pro",
+                        f"Hi {user['name']},\n\nThis is a test notification from Stock Alerts Pro.\n\nIf you received this, your email alerts are working!\n\nNatts Digital")
+                    if sent:
+                        success = f"✅ Test email sent to {email}"
+                    else:
+                        error = "❌ Failed to send test email. Check your settings."
+                else:
+                    error = "❌ No email address configured"
+            
+            # Test Telegram
+            if user_settings.get('telegram_enabled') and method in ['telegram', 'both']:
+                chat_id = user_settings.get('telegram_chat_id') or os.getenv('TELEGRAM_CHAT_ID')
+                if chat_id:
+                    sent = send_telegram(f"🧪 Test Alert\n\nThis is a test from Stock Alerts Pro.\n\nIf you received this, your Telegram alerts are working!", chat_id)
+                    if sent:
+                        success = (success or "") + f" ✅ Test Telegram sent to {chat_id}"
+                    else:
+                        error = "❌ Failed to send Telegram. Check your Chat ID."
+                else:
+                    error = "❌ No Telegram Chat ID configured"
+            
+            if not user_settings.get('email_enabled') and not user_settings.get('telegram_enabled'):
+                error = "❌ Enable at least one notification method first"
+
         elif action == 'change_password':
             curr = request.form.get('current_password')
             new  = request.form.get('new_password')
