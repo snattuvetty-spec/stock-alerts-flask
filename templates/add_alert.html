@@ -2,23 +2,38 @@
 {% block title %}Add Alert{% endblock %}
 {% block content %}
 <div class="page-title">➕ Add New Alert</div>
-<div style="max-width:480px;">
+
+<div style="max-width:600px;">
 <div class="card">
 <div class="card-body">
     {% if error %}<div class="alert alert-error">❌ {{ error }}</div>{% endif %}
-    <form method="POST" id="addForm">
+    
+    <!-- Step 1: Search for stock -->
+    <div id="search-step">
         <div class="form-group">
             <label>Stock Symbol</label>
-            <input type="text" name="symbol" id="symbolInput" placeholder="e.g. AAPL, TSLA, CBA"
-                   style="text-transform:uppercase;" required>
+            <input type="text" id="symbolSearch" placeholder="e.g. AAPL, CBA, TSLA"
+                   style="text-transform:uppercase;">
             <div class="input-hint">
-                🇺🇸 US stocks: Enter ticker (e.g. AAPL, TSLA, NVDA)<br>
-                🇦🇺 Australian stocks: Enter ticker without .AX (e.g. CBA, BHP, WBC) — we'll auto-detect!
+                Enter any stock ticker. We'll search both US (NASDAQ/NYSE) and Australian (ASX) markets.
             </div>
         </div>
-        <div id="pricePreview" style="display:none;background:#e8f4f8;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:14px;">
-            <strong id="priceSymbol"></strong> current price: <strong id="priceValue"></strong>
+        <button onclick="searchStock()" class="btn btn-primary" id="searchBtn">
+            🔍 Search Stock
+        </button>
+        
+        <div id="searchResults" style="margin-top:20px;display:none;"></div>
+    </div>
+    
+    <!-- Step 2: Create alert (hidden until stock selected) -->
+    <form method="POST" id="alertForm" style="display:none;">
+        <input type="hidden" name="symbol" id="selectedSymbol">
+        
+        <div style="background:#e8f4f8;padding:16px;border-radius:8px;margin-bottom:20px;">
+            <div style="font-size:18px;font-weight:700;color:#2E86AB;" id="selectedStockName"></div>
+            <div style="font-size:13px;color:#6b7280;margin-top:4px;" id="selectedStockInfo"></div>
         </div>
+        
         <div class="form-group">
             <label>Target Price ($)</label>
             <input type="number" name="target" step="0.01" min="0.01" placeholder="0.00" required>
@@ -31,35 +46,109 @@
             </select>
         </div>
         <div style="display:flex;gap:10px;margin-top:20px;">
-            <a href="/dashboard" class="btn btn-outline" style="flex:1;justify-content:center;">← Cancel</a>
+            <button type="button" onclick="resetForm()" class="btn btn-outline" style="flex:1;">
+                ← Change Stock
+            </button>
             <button type="submit" class="btn btn-primary" style="flex:2;">✅ Create Alert</button>
         </div>
     </form>
 </div>
 </div>
 </div>
-{% endblock %}
-{% block scripts %}
+
 <script>
-let priceTimer;
-document.getElementById('symbolInput').addEventListener('input', function() {
-    clearTimeout(priceTimer);
+let searchTimer;
+
+document.getElementById('symbolSearch').addEventListener('input', function() {
+    clearTimeout(searchTimer);
     const sym = this.value.toUpperCase().trim();
     if (sym.length >= 1) {
-        priceTimer = setTimeout(() => {
-            fetch('/price/' + sym)
-                .then(r => r.json())
-                .then(data => {
-                    if (data.price) {
-                        document.getElementById('priceSymbol').textContent = sym;
-                        document.getElementById('priceValue').textContent = '$' + data.price.toFixed(2);
-                        document.getElementById('pricePreview').style.display = 'block';
-                    } else {
-                        document.getElementById('pricePreview').style.display = 'none';
-                    }
-                });
-        }, 800);
+        searchTimer = setTimeout(() => searchStock(), 800);
     }
 });
+
+document.getElementById('symbolSearch').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        searchStock();
+    }
+});
+
+async function searchStock() {
+    const sym = document.getElementById('symbolSearch').value.toUpperCase().trim();
+    if (!sym) return;
+    
+    const btn = document.getElementById('searchBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Searching...';
+    
+    const resultsDiv = document.getElementById('searchResults');
+    resultsDiv.style.display = 'none';
+    
+    try {
+        const response = await fetch(`/price/${sym}`);
+        const data = await response.json();
+        
+        if (data.results && data.results.length > 0) {
+            let html = '<h4 style="margin-bottom:12px;font-size:16px;">Select your stock:</h4>';
+            
+            data.results.forEach(stock => {
+                const priceStr = stock.currency + ' $' + stock.price.toFixed(2);
+                html += `
+                <div onclick="selectStock('${stock.symbol}', '${stock.name}', '${stock.exchange}', ${stock.price}, '${stock.currency}')"
+                     style="background:white;border:2px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:12px;cursor:pointer;transition:all 0.15s;"
+                     onmouseover="this.style.borderColor='#2E86AB'"
+                     onmouseout="this.style.borderColor='#e5e7eb'">
+                    <div style="display:flex;justify-content:space-between;align-items:start;">
+                        <div>
+                            <div style="font-size:16px;font-weight:700;color:#1a1a2e;">${stock.symbol}</div>
+                            <div style="font-size:14px;color:#6b7280;margin-top:4px;">${stock.name}</div>
+                            <div style="font-size:12px;color:#9ca3af;margin-top:4px;">
+                                ${stock.exchange} • ${stock.market}
+                            </div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-size:18px;font-weight:700;color:#2E86AB;">${priceStr}</div>
+                            <div style="font-size:11px;color:#9ca3af;margin-top:4px;">Current Price</div>
+                        </div>
+                    </div>
+                </div>`;
+            });
+            
+            resultsDiv.innerHTML = html;
+            resultsDiv.style.display = 'block';
+        } else {
+            resultsDiv.innerHTML = `
+            <div class="alert alert-error">
+                ❌ No stock found for "${sym}"<br>
+                Please check the symbol and try again.
+            </div>`;
+            resultsDiv.style.display = 'block';
+        }
+    } catch (error) {
+        resultsDiv.innerHTML = '<div class="alert alert-error">❌ Search failed. Please try again.</div>';
+        resultsDiv.style.display = 'block';
+    }
+    
+    btn.disabled = false;
+    btn.textContent = '🔍 Search Stock';
+}
+
+function selectStock(symbol, name, exchange, price, currency) {
+    document.getElementById('selectedSymbol').value = symbol;
+    document.getElementById('selectedStockName').textContent = `${symbol} - ${name}`;
+    document.getElementById('selectedStockInfo').textContent = `${exchange} • Current Price: ${currency} $${price.toFixed(2)}`;
+    
+    document.getElementById('search-step').style.display = 'none';
+    document.getElementById('alertForm').style.display = 'block';
+}
+
+function resetForm() {
+    document.getElementById('search-step').style.display = 'block';
+    document.getElementById('alertForm').style.display = 'none';
+    document.getElementById('searchResults').style.display = 'none';
+    document.getElementById('symbolSearch').value = '';
+    document.getElementById('symbolSearch').focus();
+}
 </script>
 {% endblock %}

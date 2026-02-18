@@ -459,7 +459,6 @@ def dashboard():
 def add_alert():
     error = None
     success = None
-    price_preview = None
     if request.method == 'POST':
         symbol      = request.form.get('symbol', '').upper().strip()
         target      = request.form.get('target', '')
@@ -469,23 +468,7 @@ def add_alert():
         else:
             try:
                 target = float(target)
-                
-                # Auto-detect Australian stocks - try both versions
-                import yfinance as yf
-                ticker = yf.Ticker(symbol)
-                test_data = ticker.history(period='1d')
-                
-                # If no data and doesn't have .AX, try adding it
-                if test_data.empty and not symbol.endswith('.AX'):
-                    test_symbol = symbol + '.AX'
-                    ticker_ax = yf.Ticker(test_symbol)
-                    test_data_ax = ticker_ax.history(period='1d')
-                    
-                    # If .AX version works, use it
-                    if not test_data_ax.empty:
-                        symbol = test_symbol
-                
-                # Save the alert with the correct symbol
+                # Symbol is already verified and selected by user with correct suffix
                 supabase.table('alerts').insert({
                     'username': session['username'],
                     'symbol': symbol,
@@ -501,8 +484,48 @@ def add_alert():
 @app.route('/price/<symbol>')
 @login_required
 def get_price(symbol):
-    price, change = get_stock_price(symbol.upper())
-    return jsonify({'price': price, 'change': change})
+    """Get price and verify stock across markets"""
+    import yfinance as yf
+    symbol = symbol.upper()
+    results = []
+    
+    # Check US market
+    try:
+        ticker_us = yf.Ticker(symbol)
+        data_us = ticker_us.history(period='1d')
+        info_us = ticker_us.info
+        if not data_us.empty:
+            price_us = float(data_us['Close'].iloc[-1])
+            results.append({
+                'symbol': symbol,
+                'name': info_us.get('longName', info_us.get('shortName', symbol)),
+                'exchange': info_us.get('exchange', 'NASDAQ/NYSE'),
+                'price': price_us,
+                'currency': info_us.get('currency', 'USD'),
+                'market': 'US'
+            })
+    except:
+        pass
+    
+    # Check ASX market
+    try:
+        ticker_ax = yf.Ticker(symbol + '.AX')
+        data_ax = ticker_ax.history(period='1d')
+        info_ax = ticker_ax.info
+        if not data_ax.empty:
+            price_ax = float(data_ax['Close'].iloc[-1])
+            results.append({
+                'symbol': symbol + '.AX',
+                'name': info_ax.get('longName', info_ax.get('shortName', symbol)),
+                'exchange': 'ASX',
+                'price': price_ax,
+                'currency': info_ax.get('currency', 'AUD'),
+                'market': 'Australia'
+            })
+    except:
+        pass
+    
+    return jsonify({'results': results})
 
 # ============================================================
 # EDIT ALERT
