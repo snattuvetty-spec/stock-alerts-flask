@@ -469,6 +469,23 @@ def add_alert():
         else:
             try:
                 target = float(target)
+                
+                # Auto-detect Australian stocks - try both versions
+                import yfinance as yf
+                ticker = yf.Ticker(symbol)
+                test_data = ticker.history(period='1d')
+                
+                # If no data and doesn't have .AX, try adding it
+                if test_data.empty and not symbol.endswith('.AX'):
+                    test_symbol = symbol + '.AX'
+                    ticker_ax = yf.Ticker(test_symbol)
+                    test_data_ax = ticker_ax.history(period='1d')
+                    
+                    # If .AX version works, use it
+                    if not test_data_ax.empty:
+                        symbol = test_symbol
+                
+                # Save the alert with the correct symbol
                 supabase.table('alerts').insert({
                     'username': session['username'],
                     'symbol': symbol,

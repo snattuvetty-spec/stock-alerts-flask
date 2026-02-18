@@ -9,11 +9,11 @@
     <form method="POST" id="addForm">
         <div class="form-group">
             <label>Stock Symbol</label>
-            <input type="text" name="symbol" id="symbolInput" placeholder="e.g. AAPL, TSLA, CBA.AX"
+            <input type="text" name="symbol" id="symbolInput" placeholder="e.g. AAPL, TSLA, CBA"
                    style="text-transform:uppercase;" required>
             <div class="input-hint">
-                🇺🇸 US stocks: Enter ticker only (e.g. AAPL, TSLA)<br>
-                🇦🇺 Australian stocks: Add .AX suffix (e.g. CBA.AX, BHP.AX, WBC.AX)
+                🇺🇸 US stocks: Enter ticker (e.g. AAPL, TSLA, NVDA)<br>
+                🇦🇺 Australian stocks: Enter ticker without .AX (e.g. CBA, BHP, WBC) — we'll auto-detect!
             </div>
         </div>
         <div id="pricePreview" style="display:none;background:#e8f4f8;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:14px;">
