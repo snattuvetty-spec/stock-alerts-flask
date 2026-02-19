@@ -502,13 +502,10 @@ def add_alert():
                 error = f"Error: {str(e)}"
     return render_template('add_alert.html', error=error, success=success)
 
-# Simple cache for company names to avoid rate limiting
-_stock_name_cache = {}
-
 @app.route('/price/<symbol>')
 @login_required
 def get_price(symbol):
-    """Get price and verify stock across markets"""
+    """Get price and verify stock across markets with database-backed company name cache"""
     import yfinance as yf
     symbol = symbol.upper()
     results = []
@@ -520,30 +517,44 @@ def get_price(symbol):
         if not data_us.empty:
             price_us = float(data_us['Close'].iloc[-1])
             
-            # Check cache first
-            cache_key = f"{symbol}_US"
-            if cache_key in _stock_name_cache:
-                stock_name, exchange, currency = _stock_name_cache[cache_key]
-                print(f"US stock {symbol}: using cached name={stock_name}")
+            # Check database cache first
+            cached = supabase.table('stock_info').select('*').eq('symbol', symbol).execute()
+            
+            if cached.data:
+                # Use cached data
+                stock_name = cached.data[0]['company_name']
+                exchange = cached.data[0]['exchange']
+                currency = cached.data[0]['currency']
+                print(f"US stock {symbol}: using cached name from DB={stock_name}")
             else:
-                # Default values
+                # Not in cache, try to fetch from yfinance
                 stock_name = symbol
                 exchange = 'US Market'
                 currency = 'USD'
                 
-                # Only fetch info if not in cache
                 try:
                     info_us = ticker_us.info
                     if info_us:
-                        stock_name = (info_us.get('longName') or 
-                                     info_us.get('shortName') or 
-                                     symbol)
-                        exchange = info_us.get('exchange', 'US Market')
-                        currency = info_us.get('currency', 'USD')
-                        
-                        # Cache it
-                        _stock_name_cache[cache_key] = (stock_name, exchange, currency)
-                        print(f"US stock {symbol}: cached name={stock_name}")
+                        fetched_name = (info_us.get('longName') or 
+                                       info_us.get('shortName') or 
+                                       symbol)
+                        if fetched_name != symbol:
+                            stock_name = fetched_name
+                            exchange = info_us.get('exchange', 'US Market')
+                            currency = info_us.get('currency', 'USD')
+                            
+                            # Save to database cache
+                            try:
+                                supabase.table('stock_info').insert({
+                                    'symbol': symbol,
+                                    'company_name': stock_name,
+                                    'exchange': exchange,
+                                    'currency': currency,
+                                    'market': 'US'
+                                }).execute()
+                                print(f"US stock {symbol}: cached to DB name={stock_name}")
+                            except:
+                                pass  # Ignore duplicate key errors
                 except Exception as e:
                     print(f"US info error for {symbol}: {str(e)}")
             
@@ -565,11 +576,13 @@ def get_price(symbol):
         if not data_ax.empty:
             price_ax = float(data_ax['Close'].iloc[-1])
             
-            # Check cache first
-            cache_key = f"{symbol}_ASX"
-            if cache_key in _stock_name_cache:
-                stock_name, currency = _stock_name_cache[cache_key]
-                print(f"ASX stock {symbol}.AX: using cached name={stock_name}")
+            # Check database cache first
+            cached = supabase.table('stock_info').select('*').eq('symbol', symbol + '.AX').execute()
+            
+            if cached.data:
+                stock_name = cached.data[0]['company_name']
+                currency = cached.data[0]['currency']
+                print(f"ASX stock {symbol}.AX: using cached name from DB={stock_name}")
             else:
                 stock_name = symbol
                 currency = 'AUD'
@@ -577,14 +590,25 @@ def get_price(symbol):
                 try:
                     info_ax = ticker_ax.info
                     if info_ax:
-                        stock_name = (info_ax.get('longName') or 
-                                     info_ax.get('shortName') or 
-                                     symbol)
-                        currency = info_ax.get('currency', 'AUD')
-                        
-                        # Cache it
-                        _stock_name_cache[cache_key] = (stock_name, currency)
-                        print(f"ASX stock {symbol}.AX: cached name={stock_name}")
+                        fetched_name = (info_ax.get('longName') or 
+                                       info_ax.get('shortName') or 
+                                       symbol)
+                        if fetched_name != symbol:
+                            stock_name = fetched_name
+                            currency = info_ax.get('currency', 'AUD')
+                            
+                            # Save to database cache
+                            try:
+                                supabase.table('stock_info').insert({
+                                    'symbol': symbol + '.AX',
+                                    'company_name': stock_name,
+                                    'exchange': 'ASX',
+                                    'currency': currency,
+                                    'market': 'Australia'
+                                }).execute()
+                                print(f"ASX stock {symbol}.AX: cached to DB name={stock_name}")
+                            except:
+                                pass
                 except Exception as e:
                     print(f"ASX info error for {symbol}: {str(e)}")
             
