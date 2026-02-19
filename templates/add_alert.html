@@ -94,6 +94,9 @@ async function searchStock() {
             
             data.results.forEach(stock => {
                 const priceStr = stock.currency + ' $' + stock.price.toFixed(2);
+                // If name is same as symbol, show "Stock information" instead
+                const displayName = stock.name === stock.symbol ? 'Company information unavailable' : stock.name;
+                
                 html += `
                 <div onclick="selectStock('${stock.symbol}', '${stock.name}', '${stock.exchange}', ${stock.price}, '${stock.currency}')"
                      style="background:white;border:2px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:12px;cursor:pointer;transition:all 0.15s;"
@@ -102,7 +105,7 @@ async function searchStock() {
                     <div style="display:flex;justify-content:space-between;align-items:start;">
                         <div style="flex:1;">
                             <div style="font-size:18px;font-weight:700;color:#2E86AB;margin-bottom:6px;">${stock.symbol}</div>
-                            <div style="font-size:14px;color:#1a1a2e;font-weight:500;margin-bottom:4px;">${stock.name}</div>
+                            <div style="font-size:14px;color:${displayName === 'Company information unavailable' ? '#9ca3af' : '#1a1a2e'};font-weight:${displayName === 'Company information unavailable' ? '400' : '500'};margin-bottom:4px;font-style:${displayName === 'Company information unavailable' ? 'italic' : 'normal'};">${displayName}</div>
                             <div style="font-size:12px;color:#6b7280;">
                                 ${stock.exchange} • ${stock.market} Market
                             </div>
