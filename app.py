@@ -98,7 +98,7 @@ def send_telegram(message, chat_id):
         return False
 
 # Start background scheduler
-scheduler = BackgroundScheduler()
+scheduler = BackgroundScheduler(daemon=True)
 scheduler.add_job(func=check_alerts_job, trigger="interval", minutes=5)
 
 # Add self-ping to prevent Render free tier from sleeping
@@ -112,7 +112,12 @@ def keep_alive():
         print(f"Keep-alive error: {str(e)}")
 
 scheduler.add_job(func=keep_alive, trigger="interval", minutes=10)
-scheduler.start()
+
+try:
+    scheduler.start()
+    print("Background scheduler started successfully")
+except Exception as e:
+    print(f"Scheduler start error: {str(e)}")
 
 # Shutdown scheduler on app exit
 import atexit
@@ -214,6 +219,10 @@ def login_required(f):
 # ============================================================
 # AUTH ROUTES
 # ============================================================
+@app.route('/health')
+def health():
+    return jsonify({'status': 'ok', 'message': 'App is running'})
+
 @app.route('/', methods=['GET', 'POST'])
 def login():
     error = None
@@ -687,4 +696,10 @@ def settings():
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 8502))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    print(f"Starting Flask app on port {port}...")
+    try:
+        app.run(host='0.0.0.0', port=port, debug=False)
+    except Exception as e:
+        print(f"FATAL ERROR: {str(e)}")
+        import traceback
+        traceback.print_exc()
