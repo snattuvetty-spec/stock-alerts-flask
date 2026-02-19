@@ -505,107 +505,70 @@ def add_alert():
 @app.route('/price/<symbol>')
 @login_required
 def get_price(symbol):
-    """Get price and verify stock across markets - supports symbol or company name search"""
+    """Get price and verify stock across markets - supports symbol search only for now"""
     import yfinance as yf
     symbol = symbol.upper()
     results = []
     
-    # If it looks like a company name (contains spaces or is long), search for it
-    is_name_search = ' ' in symbol or len(symbol) > 5
+    # Check US market
+    try:
+        ticker_us = yf.Ticker(symbol)
+        data_us = ticker_us.history(period='1d', timeout=5)
+        if not data_us.empty:
+            price_us = float(data_us['Close'].iloc[-1])
+            try:
+                info_us = ticker_us.info
+                stock_name = info_us.get('longName', '')
+                if not stock_name:
+                    stock_name = info_us.get('shortName', symbol)
+                exchange = info_us.get('exchange', 'US Market')
+                currency = info_us.get('currency', 'USD')
+            except Exception as e:
+                print(f"US info error for {symbol}: {str(e)}")
+                stock_name = symbol
+                exchange = 'US Market'
+                currency = 'USD'
+            
+            results.append({
+                'symbol': symbol,
+                'name': stock_name,
+                'exchange': exchange,
+                'price': price_us,
+                'currency': currency,
+                'market': 'US'
+            })
+    except Exception as e:
+        print(f"US market search error for {symbol}: {str(e)}")
     
-    if is_name_search:
-        # Search for ticker by company name using yfinance search
-        try:
-            # Try to find matching tickers
-            search_results = yf.Ticker(symbol)
-            # This is a simple approach - try common exchanges
-            potential_symbols = [symbol.replace(' ', ''), symbol[:4], symbol[:3]]
-        except:
-            potential_symbols = []
-    else:
-        potential_symbols = [symbol]
+    # Check ASX market
+    try:
+        ticker_ax = yf.Ticker(symbol + '.AX')
+        data_ax = ticker_ax.history(period='1d', timeout=5)
+        if not data_ax.empty:
+            price_ax = float(data_ax['Close'].iloc[-1])
+            try:
+                info_ax = ticker_ax.info
+                stock_name = info_ax.get('longName', '')
+                if not stock_name:
+                    stock_name = info_ax.get('shortName', symbol)
+                currency = info_ax.get('currency', 'AUD')
+            except Exception as e:
+                print(f"ASX info error for {symbol}: {str(e)}")
+                stock_name = symbol
+                currency = 'AUD'
+            
+            results.append({
+                'symbol': symbol + '.AX',
+                'name': stock_name,
+                'exchange': 'ASX',
+                'price': price_ax,
+                'currency': currency,
+                'market': 'Australia'
+            })
+    except Exception as e:
+        print(f"ASX market search error for {symbol}: {str(e)}")
     
-    # Check each potential symbol in both markets
-    for sym in potential_symbols[:3]:  # Limit to first 3 attempts
-        # Check US market
-        try:
-            ticker_us = yf.Ticker(sym)
-            data_us = ticker_us.history(period='1d', timeout=5)
-            if not data_us.empty:
-                price_us = float(data_us['Close'].iloc[-1])
-                try:
-                    info_us = ticker_us.info
-                    stock_name = info_us.get('longName', info_us.get('shortName', sym))
-                    exchange = info_us.get('exchange', 'US Market')
-                    currency = info_us.get('currency', 'USD')
-                    
-                    # Only add if name matches search (for name searches)
-                    if not is_name_search or symbol.lower() in stock_name.lower():
-                        results.append({
-                            'symbol': sym,
-                            'name': stock_name,
-                            'exchange': exchange,
-                            'price': price_us,
-                            'currency': currency,
-                            'market': 'US'
-                        })
-                except:
-                    # If info fails, still add with basic data
-                    if not is_name_search:
-                        results.append({
-                            'symbol': sym,
-                            'name': sym,
-                            'exchange': 'US Market',
-                            'price': price_us,
-                            'currency': 'USD',
-                            'market': 'US'
-                        })
-        except Exception as e:
-            print(f"US market search error for {sym}: {str(e)}")
-        
-        # Check ASX market
-        try:
-            ticker_ax = yf.Ticker(sym + '.AX')
-            data_ax = ticker_ax.history(period='1d', timeout=5)
-            if not data_ax.empty:
-                price_ax = float(data_ax['Close'].iloc[-1])
-                try:
-                    info_ax = ticker_ax.info
-                    stock_name = info_ax.get('longName', info_ax.get('shortName', sym))
-                    currency = info_ax.get('currency', 'AUD')
-                    
-                    # Only add if name matches search (for name searches)
-                    if not is_name_search or symbol.lower() in stock_name.lower():
-                        results.append({
-                            'symbol': sym + '.AX',
-                            'name': stock_name,
-                            'exchange': 'ASX',
-                            'price': price_ax,
-                            'currency': currency,
-                            'market': 'Australia'
-                        })
-                except:
-                    if not is_name_search:
-                        results.append({
-                            'symbol': sym + '.AX',
-                            'name': sym,
-                            'exchange': 'ASX',
-                            'price': price_ax,
-                            'currency': 'AUD',
-                            'market': 'Australia'
-                        })
-        except Exception as e:
-            print(f"ASX market search error for {sym}: {str(e)}")
-    
-    # Remove duplicates based on symbol
-    seen = set()
-    unique_results = []
-    for r in results:
-        if r['symbol'] not in seen:
-            seen.add(r['symbol'])
-            unique_results.append(r)
-    
-    return jsonify({'results': unique_results})
+    return jsonify({'results': results})
 
 # ============================================================
 # EDIT ALERT
