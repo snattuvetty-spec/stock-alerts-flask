@@ -502,6 +502,9 @@ def add_alert():
                 error = f"Error: {str(e)}"
     return render_template('add_alert.html', error=error, success=success)
 
+# Simple cache for company names to avoid rate limiting
+_stock_name_cache = {}
+
 @app.route('/price/<symbol>')
 @login_required
 def get_price(symbol):
@@ -517,26 +520,32 @@ def get_price(symbol):
         if not data_us.empty:
             price_us = float(data_us['Close'].iloc[-1])
             
-            # Try multiple ways to get company info
-            stock_name = symbol
-            exchange = 'US Market'
-            currency = 'USD'
-            
-            try:
-                info_us = ticker_us.info
-                if info_us:
-                    # Try different fields for company name
-                    stock_name = (info_us.get('longName') or 
-                                 info_us.get('shortName') or 
-                                 info_us.get('displayName') or 
-                                 info_us.get('quoteType', {}).get('longName') or 
-                                 symbol)
-                    exchange = info_us.get('exchange', info_us.get('market', 'US Market'))
-                    currency = info_us.get('currency', info_us.get('financialCurrency', 'USD'))
-                    
-                    print(f"US stock {symbol}: name={stock_name}, exchange={exchange}")
-            except Exception as e:
-                print(f"US info error for {symbol}: {str(e)}, using fallback")
+            # Check cache first
+            cache_key = f"{symbol}_US"
+            if cache_key in _stock_name_cache:
+                stock_name, exchange, currency = _stock_name_cache[cache_key]
+                print(f"US stock {symbol}: using cached name={stock_name}")
+            else:
+                # Default values
+                stock_name = symbol
+                exchange = 'US Market'
+                currency = 'USD'
+                
+                # Only fetch info if not in cache
+                try:
+                    info_us = ticker_us.info
+                    if info_us:
+                        stock_name = (info_us.get('longName') or 
+                                     info_us.get('shortName') or 
+                                     symbol)
+                        exchange = info_us.get('exchange', 'US Market')
+                        currency = info_us.get('currency', 'USD')
+                        
+                        # Cache it
+                        _stock_name_cache[cache_key] = (stock_name, exchange, currency)
+                        print(f"US stock {symbol}: cached name={stock_name}")
+                except Exception as e:
+                    print(f"US info error for {symbol}: {str(e)}")
             
             results.append({
                 'symbol': symbol,
@@ -556,21 +565,28 @@ def get_price(symbol):
         if not data_ax.empty:
             price_ax = float(data_ax['Close'].iloc[-1])
             
-            stock_name = symbol
-            currency = 'AUD'
-            
-            try:
-                info_ax = ticker_ax.info
-                if info_ax:
-                    stock_name = (info_ax.get('longName') or 
-                                 info_ax.get('shortName') or 
-                                 info_ax.get('displayName') or 
-                                 symbol)
-                    currency = info_ax.get('currency', info_ax.get('financialCurrency', 'AUD'))
-                    
-                    print(f"ASX stock {symbol}.AX: name={stock_name}")
-            except Exception as e:
-                print(f"ASX info error for {symbol}: {str(e)}, using fallback")
+            # Check cache first
+            cache_key = f"{symbol}_ASX"
+            if cache_key in _stock_name_cache:
+                stock_name, currency = _stock_name_cache[cache_key]
+                print(f"ASX stock {symbol}.AX: using cached name={stock_name}")
+            else:
+                stock_name = symbol
+                currency = 'AUD'
+                
+                try:
+                    info_ax = ticker_ax.info
+                    if info_ax:
+                        stock_name = (info_ax.get('longName') or 
+                                     info_ax.get('shortName') or 
+                                     symbol)
+                        currency = info_ax.get('currency', 'AUD')
+                        
+                        # Cache it
+                        _stock_name_cache[cache_key] = (stock_name, currency)
+                        print(f"ASX stock {symbol}.AX: cached name={stock_name}")
+                except Exception as e:
+                    print(f"ASX info error for {symbol}: {str(e)}")
             
             results.append({
                 'symbol': symbol + '.AX',
