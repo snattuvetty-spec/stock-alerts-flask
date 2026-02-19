@@ -505,7 +505,7 @@ def add_alert():
 @app.route('/price/<symbol>')
 @login_required
 def get_price(symbol):
-    """Get price and verify stock across markets - supports symbol search only for now"""
+    """Get price and verify stock across markets"""
     import yfinance as yf
     symbol = symbol.upper()
     results = []
@@ -513,21 +513,30 @@ def get_price(symbol):
     # Check US market
     try:
         ticker_us = yf.Ticker(symbol)
-        data_us = ticker_us.history(period='1d', timeout=5)
+        data_us = ticker_us.history(period='1d', timeout=10)
         if not data_us.empty:
             price_us = float(data_us['Close'].iloc[-1])
+            
+            # Try multiple ways to get company info
+            stock_name = symbol
+            exchange = 'US Market'
+            currency = 'USD'
+            
             try:
                 info_us = ticker_us.info
-                stock_name = info_us.get('longName', '')
-                if not stock_name:
-                    stock_name = info_us.get('shortName', symbol)
-                exchange = info_us.get('exchange', 'US Market')
-                currency = info_us.get('currency', 'USD')
+                if info_us:
+                    # Try different fields for company name
+                    stock_name = (info_us.get('longName') or 
+                                 info_us.get('shortName') or 
+                                 info_us.get('displayName') or 
+                                 info_us.get('quoteType', {}).get('longName') or 
+                                 symbol)
+                    exchange = info_us.get('exchange', info_us.get('market', 'US Market'))
+                    currency = info_us.get('currency', info_us.get('financialCurrency', 'USD'))
+                    
+                    print(f"US stock {symbol}: name={stock_name}, exchange={exchange}")
             except Exception as e:
-                print(f"US info error for {symbol}: {str(e)}")
-                stock_name = symbol
-                exchange = 'US Market'
-                currency = 'USD'
+                print(f"US info error for {symbol}: {str(e)}, using fallback")
             
             results.append({
                 'symbol': symbol,
@@ -543,19 +552,25 @@ def get_price(symbol):
     # Check ASX market
     try:
         ticker_ax = yf.Ticker(symbol + '.AX')
-        data_ax = ticker_ax.history(period='1d', timeout=5)
+        data_ax = ticker_ax.history(period='1d', timeout=10)
         if not data_ax.empty:
             price_ax = float(data_ax['Close'].iloc[-1])
+            
+            stock_name = symbol
+            currency = 'AUD'
+            
             try:
                 info_ax = ticker_ax.info
-                stock_name = info_ax.get('longName', '')
-                if not stock_name:
-                    stock_name = info_ax.get('shortName', symbol)
-                currency = info_ax.get('currency', 'AUD')
+                if info_ax:
+                    stock_name = (info_ax.get('longName') or 
+                                 info_ax.get('shortName') or 
+                                 info_ax.get('displayName') or 
+                                 symbol)
+                    currency = info_ax.get('currency', info_ax.get('financialCurrency', 'AUD'))
+                    
+                    print(f"ASX stock {symbol}.AX: name={stock_name}")
             except Exception as e:
-                print(f"ASX info error for {symbol}: {str(e)}")
-                stock_name = symbol
-                currency = 'AUD'
+                print(f"ASX info error for {symbol}: {str(e)}, using fallback")
             
             results.append({
                 'symbol': symbol + '.AX',
