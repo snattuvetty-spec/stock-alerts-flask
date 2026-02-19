@@ -100,6 +100,18 @@ def send_telegram(message, chat_id):
 # Start background scheduler
 scheduler = BackgroundScheduler()
 scheduler.add_job(func=check_alerts_job, trigger="interval", minutes=5)
+
+# Add self-ping to prevent Render free tier from sleeping
+def keep_alive():
+    """Ping self to prevent Render spin-down"""
+    try:
+        app_url = os.getenv('APP_URL', 'https://stock-alerts-flask.onrender.com')
+        requests.get(app_url, timeout=5)
+        print("Keep-alive ping sent")
+    except Exception as e:
+        print(f"Keep-alive error: {str(e)}")
+
+scheduler.add_job(func=keep_alive, trigger="interval", minutes=10)
 scheduler.start()
 
 # Shutdown scheduler on app exit
@@ -492,38 +504,55 @@ def get_price(symbol):
     # Check US market
     try:
         ticker_us = yf.Ticker(symbol)
-        data_us = ticker_us.history(period='1d')
-        info_us = ticker_us.info
+        data_us = ticker_us.history(period='1d', timeout=5)
         if not data_us.empty:
             price_us = float(data_us['Close'].iloc[-1])
+            try:
+                info_us = ticker_us.info
+                stock_name = info_us.get('longName', info_us.get('shortName', symbol))
+                exchange = info_us.get('exchange', 'US Market')
+                currency = info_us.get('currency', 'USD')
+            except:
+                # If info fails, use basic data
+                stock_name = symbol
+                exchange = 'US Market'
+                currency = 'USD'
+            
             results.append({
                 'symbol': symbol,
-                'name': info_us.get('longName', info_us.get('shortName', symbol)),
-                'exchange': info_us.get('exchange', 'NASDAQ/NYSE'),
+                'name': stock_name,
+                'exchange': exchange,
                 'price': price_us,
-                'currency': info_us.get('currency', 'USD'),
+                'currency': currency,
                 'market': 'US'
             })
-    except:
-        pass
+    except Exception as e:
+        print(f"US market search error for {symbol}: {str(e)}")
     
     # Check ASX market
     try:
         ticker_ax = yf.Ticker(symbol + '.AX')
-        data_ax = ticker_ax.history(period='1d')
-        info_ax = ticker_ax.info
+        data_ax = ticker_ax.history(period='1d', timeout=5)
         if not data_ax.empty:
             price_ax = float(data_ax['Close'].iloc[-1])
+            try:
+                info_ax = ticker_ax.info
+                stock_name = info_ax.get('longName', info_ax.get('shortName', symbol))
+                currency = info_ax.get('currency', 'AUD')
+            except:
+                stock_name = symbol
+                currency = 'AUD'
+            
             results.append({
                 'symbol': symbol + '.AX',
-                'name': info_ax.get('longName', info_ax.get('shortName', symbol)),
+                'name': stock_name,
                 'exchange': 'ASX',
                 'price': price_ax,
-                'currency': info_ax.get('currency', 'AUD'),
+                'currency': currency,
                 'market': 'Australia'
             })
-    except:
-        pass
+    except Exception as e:
+        print(f"ASX market search error for {symbol}: {str(e)}")
     
     return jsonify({'results': results})
 
