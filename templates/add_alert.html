@@ -11,11 +11,12 @@
     <!-- Step 1: Search for stock -->
     <div id="search-step">
         <div class="form-group">
-            <label>Stock Symbol</label>
-            <input type="text" id="symbolSearch" placeholder="e.g. AAPL, CBA, TSLA"
+            <label>Stock Symbol or Company Name</label>
+            <input type="text" id="symbolSearch" placeholder="e.g. AAPL, CBA, or Halliburton"
                    style="text-transform:uppercase;">
             <div class="input-hint">
-                Enter any stock ticker. We'll search both US (NASDAQ/NYSE) and Australian (ASX) markets.
+                Enter stock ticker (AAPL, CBA) or company name (Apple, Commonwealth Bank).
+                We'll search both US and Australian markets.
             </div>
         </div>
         <button onclick="searchStock()" class="btn btn-primary" id="searchBtn">
@@ -97,19 +98,19 @@ async function searchStock() {
                 html += `
                 <div onclick="selectStock('${stock.symbol}', '${stock.name}', '${stock.exchange}', ${stock.price}, '${stock.currency}')"
                      style="background:white;border:2px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:12px;cursor:pointer;transition:all 0.15s;"
-                     onmouseover="this.style.borderColor='#2E86AB'"
-                     onmouseout="this.style.borderColor='#e5e7eb'">
+                     onmouseover="this.style.borderColor='#2E86AB';this.style.backgroundColor='#f8fbfd'"
+                     onmouseout="this.style.borderColor='#e5e7eb';this.style.backgroundColor='white'">
                     <div style="display:flex;justify-content:space-between;align-items:start;">
-                        <div>
-                            <div style="font-size:16px;font-weight:700;color:#1a1a2e;">${stock.symbol}</div>
-                            <div style="font-size:14px;color:#6b7280;margin-top:4px;">${stock.name}</div>
-                            <div style="font-size:12px;color:#9ca3af;margin-top:4px;">
-                                ${stock.exchange} • ${stock.market}
+                        <div style="flex:1;">
+                            <div style="font-size:18px;font-weight:700;color:#2E86AB;margin-bottom:6px;">${stock.symbol}</div>
+                            <div style="font-size:14px;color:#1a1a2e;font-weight:500;margin-bottom:4px;">${stock.name}</div>
+                            <div style="font-size:12px;color:#6b7280;">
+                                ${stock.exchange} • ${stock.market} Market
                             </div>
                         </div>
-                        <div style="text-align:right;">
-                            <div style="font-size:18px;font-weight:700;color:#2E86AB;">${priceStr}</div>
-                            <div style="font-size:11px;color:#9ca3af;margin-top:4px;">Current Price</div>
+                        <div style="text-align:right;margin-left:16px;">
+                            <div style="font-size:18px;font-weight:700;color:#27ae60;">${priceStr}</div>
+                            <div style="font-size:11px;color:#9ca3af;margin-top:2px;">Current Price</div>
                         </div>
                     </div>
                 </div>`;
