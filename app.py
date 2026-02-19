@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify, send_from_directory
 from supabase import create_client, Client
 import bcrypt
 import os
@@ -17,6 +17,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app.secret_key = os.getenv('SECRET_KEY', 'natts-digital-secret-2026')
+
+# Serve static files (manifest, service worker, icons)
+@app.route('/static/<path:filename>')
+def serve_static(filename):
+    return send_from_directory('static', filename)
 
 # ============================================================
 # SUPABASE

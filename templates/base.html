@@ -4,6 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Stock Alerts Pro{% endblock %} — Natts Digital</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="Real-time stock price alerts for US and Australian markets via Telegram">
+    <meta name="theme-color" content="#2E86AB">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Stock Alerts Pro">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/static/manifest.json">
+    
+    <!-- App Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png">
+    <link rel="apple-touch-icon" href="/static/icon-192.png">
+    
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -227,6 +242,28 @@
             .page-title { font-size: 22px; }
             .nav-links a span.label { display: none; }
         }
+        
+        /* PWA INSTALL BANNER ANIMATIONS */
+        @keyframes slideUp {
+            from {
+                transform: translateY(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        @keyframes slideDown {
+            from {
+                transform: translateY(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateY(100px);
+                opacity: 0;
+            }
+        }
 
         /* CONFIRM DIALOG */
         .modal-overlay {
@@ -314,6 +351,93 @@ function closeDeleteModal() {
 document.getElementById('deleteModal').addEventListener('click', function(e) {
     if (e.target === this) closeDeleteModal();
 });
+
+// PWA Service Worker Registration
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/static/sw.js')
+            .then(reg => console.log('Service Worker registered'))
+            .catch(err => console.log('Service Worker registration failed:', err));
+    });
+}
+
+// PWA Install Prompt
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    
+    // Show install banner if user is logged in
+    if (document.querySelector('nav .nav-user')) {
+        showInstallBanner();
+    }
+});
+
+function showInstallBanner() {
+    const banner = document.createElement('div');
+    banner.id = 'install-banner';
+    banner.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        right: 20px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 16px 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        animation: slideUp 0.3s ease-out;
+    `;
+    
+    banner.innerHTML = `
+        <div style="flex:1;">
+            <div style="font-weight:700;font-size:15px;margin-bottom:4px;">📱 Install Stock Alerts Pro</div>
+            <div style="font-size:13px;opacity:0.95;">Add to your home screen for quick access</div>
+        </div>
+        <button onclick="installPWA()" style="background:white;color:#667eea;border:none;padding:10px 20px;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer;white-space:nowrap;">
+            Install
+        </button>
+        <button onclick="dismissInstallBanner()" style="background:transparent;border:none;color:white;font-size:20px;cursor:pointer;padding:0 8px;">
+            ×
+        </button>
+    `;
+    
+    document.body.appendChild(banner);
+    
+    // Hide after 10 seconds if not interacted
+    setTimeout(() => {
+        if (document.getElementById('install-banner')) {
+            dismissInstallBanner();
+        }
+    }, 10000);
+}
+
+function installPWA() {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+                console.log('PWA installed');
+            }
+            deferredPrompt = null;
+        });
+    }
+    dismissInstallBanner();
+}
+
+function dismissInstallBanner() {
+    const banner = document.getElementById('install-banner');
+    if (banner) {
+        banner.style.animation = 'slideDown 0.3s ease-out';
+        setTimeout(() => banner.remove(), 300);
+    }
+}
+
 </script>
 
 {% block scripts %}{% endblock %}
