@@ -44,7 +44,11 @@
         </span>
     {% endif %}
     <span style="background:#e8f4f8;color:#2E86AB;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;">
+        {% if premium %}
+        📊 {{ alert_count }} Alert{{ 's' if alert_count != 1 else '' }}
+        {% else %}
         📊 {{ alert_count }}/{{ alert_limit }} Alerts
+        {% endif %}
     </span>
 </div>
 
