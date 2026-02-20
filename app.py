@@ -35,28 +35,86 @@ supabase: Client = create_client(
 )
 
 # ============================================================
-# BACKGROUND ALERT CHECKER
+# BACKGROUND ALERT CHECKER WITH CACHING
 # ============================================================
 from apscheduler.schedulers.background import BackgroundScheduler
+from collections import defaultdict
+
+# Price cache: {symbol: (price, timestamp)}
+_price_cache = {}
+CACHE_DURATION = 60  # 1 minute cache
+
+def get_cached_price(symbol):
+    """Get price from cache if fresh, otherwise fetch new"""
+    import time
+    
+    # Check cache
+    if symbol in _price_cache:
+        cached_price, cached_time = _price_cache[symbol]
+        if time.time() - cached_time < CACHE_DURATION:
+            print(f"Cache hit for {symbol}: ${cached_price}")
+            return cached_price
+    
+    # Cache miss - fetch new price
+    price, _ = get_stock_price(symbol)
+    if price:
+        _price_cache[symbol] = (price, time.time())
+        print(f"Fetched fresh price for {symbol}: ${price}")
+    return price
 
 def check_alerts_job():
-    """Background job to check all alerts and send notifications"""
+    """Background job to check all alerts with batching and caching"""
     try:
+        # Check if major markets are open (US or Australia)
+        from datetime import datetime
+        import pytz
+        
+        now_utc = datetime.now(pytz.UTC)
+        now_ny = now_utc.astimezone(pytz.timezone('America/New_York'))
+        now_sydney = now_utc.astimezone(pytz.timezone('Australia/Sydney'))
+        
+        # US market hours: 9:30 AM - 4:00 PM ET, Mon-Fri
+        us_open = (now_ny.weekday() < 5 and 
+                   9 <= now_ny.hour < 16 and 
+                   not (now_ny.hour == 9 and now_ny.minute < 30))
+        
+        # ASX hours: 10:00 AM - 4:00 PM AEDT, Mon-Fri
+        asx_open = (now_sydney.weekday() < 5 and 
+                    10 <= now_sydney.hour < 16)
+        
+        if not us_open and not asx_open:
+            print(f"Markets closed - skipping check (NY: {now_ny.strftime('%H:%M %a')}, Sydney: {now_sydney.strftime('%H:%M %a')})")
+            return
+        
         # Get all enabled alerts
         all_alerts = supabase.table('alerts').select('*').eq('enabled', True).execute().data
         
+        if not all_alerts:
+            return
+        
+        # Group alerts by symbol for batch processing
+        alerts_by_symbol = defaultdict(list)
         for alert in all_alerts:
-            price, _ = get_stock_price(alert['symbol'])
+            alerts_by_symbol[alert['symbol']].append(alert)
+        
+        print(f"Checking {len(all_alerts)} alerts across {len(alerts_by_symbol)} symbols")
+        
+        # Process each symbol once (batch processing)
+        for symbol, symbol_alerts in alerts_by_symbol.items():
+            # Get price once for all alerts of this symbol (uses cache if available)
+            price = get_cached_price(symbol)
             if not price:
                 continue
             
-            triggered = False
-            if alert['type'] == 'above' and price >= alert['target']:
-                triggered = True
-            elif alert['type'] == 'below' and price <= alert['target']:
-                triggered = True
-            
-            if triggered:
+            # Check all alerts for this symbol
+            for alert in symbol_alerts:
+                triggered = False
+                if alert['type'] == 'above' and price >= alert['target']:
+                    triggered = True
+                elif alert['type'] == 'below' and price <= alert['target']:
+                    triggered = True
+                
+                if triggered:
                 # Get user settings
                 username = alert['username']
                 settings_result = supabase.table('user_settings').select('*').eq('username', username).execute()
