@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Payment Successful{% endblock %}
+{% block content %}
+<div style="max-width:600px;margin:80px auto;text-align:center;">
+    <div style="font-size:80px;margin-bottom:20px;">🎉</div>
+    <h1 style="font-size:32px;color:#27ae60;margin-bottom:12px;">Welcome to Premium!</h1>
+    <p style="font-size:16px;color:#6b7280;margin-bottom:32px;">
+        Your payment was successful. You now have unlimited stock alerts!
+    </p>
+    
+    <div style="background:#e8f5e9;padding:20px;border-radius:12px;margin-bottom:32px;">
+        <h3 style="color:#27ae60;margin-bottom:8px;">✨ Premium Features Unlocked</h3>
+        <ul style="list-style:none;padding:0;color:#2e7d32;line-height:1.8;">
+            <li>✅ Unlimited stock alerts</li>
+            <li>✅ Priority support</li>
+            <li>✅ Advanced features (coming soon)</li>
+        </ul>
+    </div>
+    
+    <a href="/dashboard" class="btn btn-primary" style="font-size:16px;padding:14px 32px;">
+        Go to Dashboard
+    </a>
+</div>
+{% endblock %}

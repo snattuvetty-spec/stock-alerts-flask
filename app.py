@@ -6,6 +6,7 @@ import smtplib
 import requests
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import stripe
 from datetime import datetime, timedelta
 import random
 import string
@@ -17,6 +18,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app.secret_key = os.getenv('SECRET_KEY', 'natts-digital-secret-2026')
+
+# Stripe configuration
+stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
+STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY')
+STRIPE_PRICE_MONTHLY = os.getenv('STRIPE_PRICE_MONTHLY', 'price_1T2isyEX5QghswoUgNNcfJCN')
+STRIPE_PRICE_ANNUAL = os.getenv('STRIPE_PRICE_ANNUAL', 'price_1T2iusEX5QghswoUFfYVYedR')
+STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')
 
 # ============================================================
 # SUPABASE
@@ -708,6 +716,82 @@ def quick_update_alert(alert_id):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 # ============================================================
+# STRIPE SUBSCRIPTION
+# ============================================================
+@app.route('/create-checkout-session', methods=['POST'])
+@login_required
+def create_checkout_session():
+    """Create Stripe checkout session for subscription"""
+    try:
+        plan = request.form.get('plan', 'monthly')
+        price_id = STRIPE_PRICE_MONTHLY if plan == 'monthly' else STRIPE_PRICE_ANNUAL
+        
+        checkout_session = stripe.checkout.Session.create(
+            customer_email=session.get('email'),
+            line_items=[{
+                'price': price_id,
+                'quantity': 1,
+            }],
+            mode='subscription',
+            success_url=request.host_url + 'success?session_id={CHECKOUT_SESSION_ID}',
+            cancel_url=request.host_url + 'settings?canceled=true',
+            metadata={
+                'username': session['username']
+            }
+        )
+        return redirect(checkout_session.url, code=303)
+    except Exception as e:
+        print(f"Stripe checkout error: {str(e)}")
+        return redirect(url_for('settings', error='payment'))
+
+@app.route('/success')
+@login_required
+def success():
+    """Payment success page"""
+    return render_template('success.html', username=session.get('username'))
+
+@app.route('/stripe-webhook', methods=['POST'])
+def stripe_webhook():
+    """Handle Stripe webhook events"""
+    payload = request.data
+    sig_header = request.headers.get('Stripe-Signature')
+    
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, STRIPE_WEBHOOK_SECRET
+        )
+    except ValueError as e:
+        return jsonify({'error': 'Invalid payload'}), 400
+    except stripe.error.SignatureVerificationError as e:
+        return jsonify({'error': 'Invalid signature'}), 400
+    
+    # Handle the event
+    if event['type'] == 'checkout.session.completed':
+        session_data = event['data']['object']
+        username = session_data['metadata']['username']
+        
+        # Activate premium
+        supabase.table('users').update({
+            'premium': True,
+            'stripe_customer_id': session_data.get('customer'),
+            'stripe_subscription_id': session_data.get('subscription')
+        }).eq('username', username).execute()
+        
+        print(f"✅ Premium activated for {username}")
+    
+    elif event['type'] == 'customer.subscription.deleted':
+        subscription = event['data']['object']
+        
+        # Deactivate premium
+        supabase.table('users').update({
+            'premium': False
+        }).eq('stripe_subscription_id', subscription['id']).execute()
+        
+        print(f"❌ Premium cancelled for subscription {subscription['id']}")
+    
+    return jsonify({'status': 'success'}), 200
+
+# ============================================================
 # SETTINGS
 # ============================================================
 @app.route('/settings', methods=['GET', 'POST'])
@@ -767,6 +851,11 @@ def settings():
 
         s = supabase.table('user_settings').select('*').eq('username', username).execute().data
         user_settings = s[0] if s else {}
+    
+    # Get premium status
+    user = supabase.table('users').select('premium').eq('username', username).execute().data
+    is_premium = user[0]['premium'] if user else False
+    user_settings['premium'] = is_premium
 
     return render_template('settings.html',
         username=username,
