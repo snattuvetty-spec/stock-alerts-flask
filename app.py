@@ -808,6 +808,36 @@ def success():
     """Payment success page"""
     return render_template('success.html', username=session.get('username'))
 
+@app.route('/cancel-subscription', methods=['POST'])
+@login_required
+def cancel_subscription():
+    """Cancel Stripe subscription but keep access until period end"""
+    try:
+        username = session['username']
+        user = supabase.table('users').select('*').eq('username', username).execute().data
+        
+        if not user or not user[0].get('stripe_subscription_id'):
+            return redirect(url_for('settings', error='No active subscription found'))
+        
+        subscription_id = user[0]['stripe_subscription_id']
+        
+        # Cancel at period end (user keeps access until then)
+        stripe.Subscription.modify(
+            subscription_id,
+            cancel_at_period_end=True
+        )
+        
+        # Update database to mark as canceling
+        supabase.table('users').update({
+            'subscription_cancel_at_period_end': True
+        }).eq('username', username).execute()
+        
+        return redirect(url_for('settings', success='Subscription cancelled. You\'ll keep premium access until the end of your billing period.'))
+        
+    except Exception as e:
+        print(f"Cancel subscription error: {str(e)}")
+        return redirect(url_for('settings', error='Failed to cancel subscription'))
+
 @app.route('/stripe-webhook', methods=['POST'])
 def stripe_webhook():
     """Handle Stripe webhook events"""
@@ -838,14 +868,27 @@ def stripe_webhook():
         print(f"✅ Premium activated for {username}")
     
     elif event['type'] == 'customer.subscription.deleted':
+        # Subscription actually ended - remove premium access
         subscription = event['data']['object']
         
         # Deactivate premium
         supabase.table('users').update({
-            'premium': False
+            'premium': False,
+            'subscription_cancel_at_period_end': False,
+            'stripe_subscription_id': None
         }).eq('stripe_subscription_id', subscription['id']).execute()
         
-        print(f"❌ Premium cancelled for subscription {subscription['id']}")
+        print(f"❌ Premium ended for subscription {subscription['id']}")
+    
+    elif event['type'] == 'customer.subscription.updated':
+        # Handle subscription updates (cancellation scheduled, reactivation, etc.)
+        subscription = event['data']['object']
+        
+        supabase.table('users').update({
+            'subscription_cancel_at_period_end': subscription.get('cancel_at_period_end', False)
+        }).eq('stripe_subscription_id', subscription['id']).execute()
+        
+        print(f"🔄 Subscription updated: {subscription['id']}, cancel_at_period_end={subscription.get('cancel_at_period_end')}")
     
     return jsonify({'status': 'success'}), 200
 
@@ -910,10 +953,12 @@ def settings():
         s = supabase.table('user_settings').select('*').eq('username', username).execute().data
         user_settings = s[0] if s else {}
     
-    # Get premium status
-    user = supabase.table('users').select('premium').eq('username', username).execute().data
+    # Get premium status and cancellation info
+    user = supabase.table('users').select('premium, subscription_cancel_at_period_end').eq('username', username).execute().data
     is_premium = user[0]['premium'] if user else False
+    cancel_at_period_end = user[0].get('subscription_cancel_at_period_end', False) if user else False
     user_settings['premium'] = is_premium
+    user_settings['subscription_cancel_at_period_end'] = cancel_at_period_end
 
     return render_template('settings.html',
         username=username,

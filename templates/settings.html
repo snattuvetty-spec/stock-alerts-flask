@@ -40,6 +40,43 @@
     </div>
     {% endif %}
 
+    <!-- Premium Subscription Management -->
+    {% if settings.get('premium') %}
+    <div class="card">
+        <div class="card-body">
+            <h3 style="margin-bottom:12px;">⭐ Premium Subscription</h3>
+            
+            {% if settings.get('subscription_cancel_at_period_end') %}
+            <p style="color:#dc3545;font-weight:600;margin-bottom:8px;">Status: Cancelling (active until period end)</p>
+            <p style="color:#6b7280;font-size:14px;margin-bottom:16px;">
+                Your subscription will end at the end of your current billing period. You'll keep premium access until then.
+            </p>
+            <p style="color:#6b7280;font-size:13px;">
+                Want to continue? Contact us or resubscribe to keep premium features.
+            </p>
+            {% else %}
+            <p style="color:#27ae60;font-weight:600;margin-bottom:8px;">Status: Active</p>
+            <p style="color:#6b7280;font-size:14px;margin-bottom:16px;">
+                You have unlimited alerts and premium features.
+            </p>
+            
+            <form method="POST" action="/cancel-subscription" 
+                  onsubmit="return confirm('Cancel subscription? You\'ll keep access until the end of your billing period.');"
+                  style="margin:0;">
+                <button type="submit" class="btn btn-secondary" style="background:#dc3545;border-color:#dc3545;">
+                    Cancel Subscription
+                </button>
+            </form>
+            
+            <div style="margin-top:12px;padding:12px;background:#fff3cd;border-radius:6px;font-size:13px;color:#856404;">
+                ℹ️ If you cancel, you'll keep premium access until the end of your current billing period.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+
     <!-- Telegram Notifications -->
     <div class="card">
         <div class="card-body">
