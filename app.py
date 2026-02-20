@@ -115,23 +115,23 @@ def check_alerts_job():
                     triggered = True
                 
                 if triggered:
-                # Get user settings
-                username = alert['username']
-                settings_result = supabase.table('user_settings').select('*').eq('username', username).execute()
-                user_result = supabase.table('users').select('*').eq('username', username).execute()
-                
-                if not settings_result.data or not user_result.data:
-                    continue
-                
-                settings = settings_result.data[0]
-                user = user_result.data[0]
-                
-                # Send Telegram notification
-                if settings.get('telegram_enabled'):
-                    chat_id = settings.get('telegram_chat_id') or os.getenv('TELEGRAM_CHAT_ID')
-                    if chat_id:
-                        direction = "🔼 above" if alert['type'] == 'above' else "🔽 below"
-                        msg = f"""🚀 Alert Triggered!
+                    # Get user settings
+                    username = alert['username']
+                    settings_result = supabase.table('user_settings').select('*').eq('username', username).execute()
+                    user_result = supabase.table('users').select('*').eq('username', username).execute()
+                    
+                    if not settings_result.data or not user_result.data:
+                        continue
+                    
+                    settings = settings_result.data[0]
+                    user = user_result.data[0]
+                    
+                    # Send Telegram notification
+                    if settings.get('telegram_enabled'):
+                        chat_id = settings.get('telegram_chat_id') or os.getenv('TELEGRAM_CHAT_ID')
+                        if chat_id:
+                            direction = "🔼 above" if alert['type'] == 'above' else "🔽 below"
+                            msg = f"""🚀 Alert Triggered!
 
 Hi {user['name']},
 
@@ -143,10 +143,10 @@ Hi {user['name']},
 Manage alerts: https://stock-alerts-flask.onrender.com
 
 Natts Digital"""
-                        send_telegram(msg, chat_id)
-                
-                # Disable alert after triggering (prevents spam)
-                supabase.table('alerts').update({'enabled': False}).eq('id', alert['id']).execute()
+                            send_telegram(msg, chat_id)
+                    
+                    # Disable alert after triggering (prevents spam)
+                    supabase.table('alerts').update({'enabled': False}).eq('id', alert['id']).execute()
                 
     except Exception as e:
         print(f"Alert checker error: {str(e)}")
@@ -838,6 +838,46 @@ def cancel_subscription():
         print(f"Cancel subscription error: {str(e)}")
         return redirect(url_for('settings', error='Failed to cancel subscription'))
 
+@app.route('/switch-plan', methods=['POST'])
+@login_required
+def switch_plan():
+    """Switch subscription plan (monthly ↔ annual)"""
+    try:
+        username = session['username']
+        new_plan = request.form.get('new_plan')  # 'monthly' or 'annual'
+        
+        user = supabase.table('users').select('*').eq('username', username).execute().data
+        
+        if not user or not user[0].get('stripe_subscription_id'):
+            return redirect(url_for('settings', error='No active subscription found'))
+        
+        subscription_id = user[0]['stripe_subscription_id']
+        
+        # Get new price ID
+        new_price_id = STRIPE_PRICE_ANNUAL if new_plan == 'annual' else STRIPE_PRICE_MONTHLY
+        
+        # Update subscription with prorated billing
+        stripe.Subscription.modify(
+            subscription_id,
+            items=[{
+                'id': stripe.Subscription.retrieve(subscription_id)['items']['data'][0]['id'],
+                'price': new_price_id,
+            }],
+            proration_behavior='create_prorations',  # Credit unused time
+        )
+        
+        # Update database
+        supabase.table('users').update({
+            'subscription_plan': new_plan
+        }).eq('username', username).execute()
+        
+        plan_name = "Annual ($49/year)" if new_plan == 'annual' else "Monthly ($4.99/month)"
+        return redirect(url_for('settings', success=f'✅ Switched to {plan_name}! You\'ve been credited for unused time.'))
+        
+    except Exception as e:
+        print(f"Switch plan error: {str(e)}")
+        return redirect(url_for('settings', error='Failed to switch plan. Please try again.'))
+
 @app.route('/stripe-webhook', methods=['POST'])
 def stripe_webhook():
     """Handle Stripe webhook events"""
@@ -858,14 +898,21 @@ def stripe_webhook():
         session_data = event['data']['object']
         username = session_data['metadata']['username']
         
+        # Determine plan type from price
+        subscription = stripe.Subscription.retrieve(session_data.get('subscription'))
+        price_id = subscription['items']['data'][0]['price']['id']
+        plan_type = 'annual' if price_id == STRIPE_PRICE_ANNUAL else 'monthly'
+        
         # Activate premium
         supabase.table('users').update({
             'premium': True,
             'stripe_customer_id': session_data.get('customer'),
-            'stripe_subscription_id': session_data.get('subscription')
+            'stripe_subscription_id': session_data.get('subscription'),
+            'subscription_plan': plan_type,
+            'subscription_cancel_at_period_end': False
         }).eq('username', username).execute()
         
-        print(f"✅ Premium activated for {username}")
+        print(f"✅ Premium activated for {username} ({plan_type} plan)")
     
     elif event['type'] == 'customer.subscription.deleted':
         # Subscription actually ended - remove premium access
@@ -954,11 +1001,13 @@ def settings():
         user_settings = s[0] if s else {}
     
     # Get premium status and cancellation info
-    user = supabase.table('users').select('premium, subscription_cancel_at_period_end').eq('username', username).execute().data
+    user = supabase.table('users').select('premium, subscription_cancel_at_period_end, subscription_plan').eq('username', username).execute().data
     is_premium = user[0]['premium'] if user else False
     cancel_at_period_end = user[0].get('subscription_cancel_at_period_end', False) if user else False
+    subscription_plan = user[0].get('subscription_plan', 'monthly') if user else 'monthly'
     user_settings['premium'] = is_premium
     user_settings['subscription_cancel_at_period_end'] = cancel_at_period_end
+    user_settings['subscription_plan'] = subscription_plan
 
     return render_template('settings.html',
         username=username,
