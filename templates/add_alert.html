@@ -3,6 +3,18 @@
 {% block content %}
 <div class="page-title">➕ Add New Alert</div>
 
+{% if at_limit %}
+<div style="background:#fee;border:2px solid #f87171;color:#991b1b;padding:16px;border-radius:8px;margin-bottom:20px;">
+    <strong>⚠️ Limit Reached!</strong><br>
+    You've reached the free trial limit of {{ alert_limit }} alerts. 
+    <a href="/settings" style="color:#991b1b;text-decoration:underline;font-weight:600;">Upgrade to Premium</a> for unlimited alerts!
+</div>
+{% elif not is_premium %}
+<div style="background:#fef3c7;border:2px solid #fbbf24;color:#78350f;padding:12px;border-radius:8px;margin-bottom:20px;font-size:13px;">
+    📊 Free Trial: {{ alert_count }}/{{ alert_limit }} alerts used
+</div>
+{% endif %}
+
 <div style="max-width:600px;">
 <div class="card">
 <div class="card-body">

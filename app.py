@@ -480,18 +480,31 @@ def dashboard():
 def add_alert():
     error = None
     success = None
+    username = session['username']
+    
+    # Check alert limit
+    alerts = supabase.table('alerts').select('*').eq('username', username).execute().data
+    alert_count = len(alerts)
+    alert_limit = 10  # Free tier limit
+    
+    # Check if premium
+    user = supabase.table('users').select('*').eq('username', username).execute().data
+    is_premium = user[0]['premium'] if user else False
+    
     if request.method == 'POST':
-        symbol      = request.form.get('symbol', '').upper().strip()
-        target      = request.form.get('target', '')
-        alert_type  = request.form.get('alert_type', 'above')
-        if not symbol or not target:
+        # Enforce limit for non-premium users
+        if not is_premium and alert_count >= alert_limit:
+            error = f"⚠️ Free trial limit reached ({alert_limit} alerts). Upgrade to Premium for unlimited alerts!"
+        elif not request.form.get('symbol') or not request.form.get('target'):
             error = "Please fill all fields"
         else:
             try:
-                target = float(target)
-                # Symbol is already verified and selected by user with correct suffix
+                symbol = request.form.get('symbol', '').upper().strip()
+                target = float(request.form.get('target', ''))
+                alert_type = request.form.get('alert_type', 'above')
+                
                 supabase.table('alerts').insert({
-                    'username': session['username'],
+                    'username': username,
                     'symbol': symbol,
                     'target': target,
                     'type': alert_type,
@@ -500,7 +513,16 @@ def add_alert():
                 return redirect(url_for('dashboard'))
             except Exception as e:
                 error = f"Error: {str(e)}"
-    return render_template('add_alert.html', error=error, success=success)
+    
+    # Pass limit info to template
+    at_limit = not is_premium and alert_count >= alert_limit
+    return render_template('add_alert.html', 
+                          error=error, 
+                          success=success,
+                          alert_count=alert_count,
+                          alert_limit=alert_limit,
+                          at_limit=at_limit,
+                          is_premium=is_premium)
 
 @app.route('/price/<symbol>')
 @login_required
