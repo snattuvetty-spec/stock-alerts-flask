@@ -52,13 +52,57 @@
                 Your subscription will end at the end of your current billing period. You'll keep premium access until then.
             </p>
             <p style="color:#6b7280;font-size:13px;">
-                Want to continue? Contact us or resubscribe to keep premium features.
+                Want to continue? Resubscribe below to keep premium features.
             </p>
+            
+            <div style="display:grid;gap:12px;margin-top:16px;">
+                <form method="POST" action="/create-checkout-session" style="margin:0;">
+                    <input type="hidden" name="plan" value="monthly">
+                    <button type="submit" style="width:100%;background:#667eea;color:white;border:none;padding:12px;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px;">
+                        💳 Resubscribe - Monthly $4.99/month
+                    </button>
+                </form>
+                
+                <form method="POST" action="/create-checkout-session" style="margin:0;">
+                    <input type="hidden" name="plan" value="annual">
+                    <button type="submit" style="width:100%;background:#27ae60;color:white;border:none;padding:12px;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px;">
+                        🎁 Resubscribe - Annual $49/year (Save 17%)
+                    </button>
+                </form>
+            </div>
+            
             {% else %}
-            <p style="color:#27ae60;font-weight:600;margin-bottom:8px;">Status: Active</p>
+            <p style="color:#27ae60;font-weight:600;margin-bottom:8px;">
+                Status: Active
+                {% if settings.get('subscription_plan') %}
+                ({{ settings.get('subscription_plan')|title }})
+                {% endif %}
+            </p>
             <p style="color:#6b7280;font-size:14px;margin-bottom:16px;">
                 You have unlimited alerts and premium features.
             </p>
+            
+            <!-- Plan Switching -->
+            {% if settings.get('subscription_plan') == 'monthly' %}
+            <div style="background:#e8f5e9;padding:12px;border-radius:6px;margin-bottom:16px;">
+                <p style="color:#2e7d32;font-weight:600;font-size:14px;margin-bottom:8px;">💡 Save 17% with Annual Plan</p>
+                <p style="color:#4caf50;font-size:13px;margin-bottom:12px;">
+                    Switch to annual billing and save $10.88/year! You'll be credited for your remaining monthly time.
+                </p>
+                <form method="POST" action="/switch-plan" style="margin:0;">
+                    <input type="hidden" name="new_plan" value="annual">
+                    <button type="submit" class="btn btn-primary" style="background:#27ae60;border-color:#27ae60;">
+                        Switch to Annual - $49/year
+                    </button>
+                </form>
+            </div>
+            {% elif settings.get('subscription_plan') == 'annual' %}
+            <div style="background:#e3f2fd;padding:12px;border-radius:6px;margin-bottom:16px;">
+                <p style="color:#1976d2;font-size:13px;">
+                    You're on the Annual plan (best value!). If you'd like to switch to Monthly, it will take effect after your current annual period ends.
+                </p>
+            </div>
+            {% endif %}
             
             <form method="POST" action="/cancel-subscription" 
                   onsubmit="return confirm('Cancel subscription? You\'ll keep access until the end of your billing period.');"
