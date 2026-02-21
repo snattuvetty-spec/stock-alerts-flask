@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Feedback – Stock Alerts Pro{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width:600px; margin:40px auto; padding:0 16px;">
+
+  <div style="display:flex; align-items:center; gap:12px; margin-bottom:24px;">
+    <a href="{{ url_for('dashboard') }}" style="color:#888; text-decoration:none; font-size:14px;">← Back</a>
+  </div>
+
+  <div style="background:#fff; border-radius:16px; padding:32px; box-shadow:0 2px 16px rgba(0,0,0,0.08);">
+    <h2 style="margin:0 0 4px; font-size:22px; font-weight:700;">Send Feedback</h2>
+    <p style="color:#666; margin:0 0 28px; font-size:14px;">
+      We'd love to hear from you! Questions, bugs, suggestions — all welcome.<br>
+      Or email us directly at
+      <a href="mailto:support@stockalertspro.com" style="color:#6c63ff;">support@stockalertspro.com</a>
+    </p>
+
+    {% if success %}
+    <div style="background:#e6faf0; border:1px solid #b2dfdb; border-radius:10px; padding:16px; margin-bottom:20px; color:#2e7d32; font-size:14px;">
+      ✅ {{ success }}
+    </div>
+    {% endif %}
+
+    {% if error %}
+    <div style="background:#fdecea; border:1px solid #f5c6cb; border-radius:10px; padding:16px; margin-bottom:20px; color:#c62828; font-size:14px;">
+      ⚠️ {{ error }}
+    </div>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('feedback') }}">
+
+      <!-- Type -->
+      <div style="margin-bottom:18px;">
+        <label style="display:block; font-size:13px; font-weight:600; color:#444; margin-bottom:8px;">Feedback Type</label>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          {% for val, label, emoji in [('general','General','💬'), ('bug','Bug Report','🐛'), ('feature','Feature Request','✨'), ('billing','Billing','💳')] %}
+          <label style="cursor:pointer;">
+            <input type="radio" name="feedback_type" value="{{ val }}" {% if loop.first %}checked{% endif %} style="display:none;" class="type-radio">
+            <span class="type-chip" data-val="{{ val }}"
+              style="display:inline-block; padding:8px 14px; border-radius:20px; border:2px solid {% if loop.first %}#6c63ff{% else %}#e0e0e0{% endif %}; background:{% if loop.first %}#f0eeff{% else %}#fff{% endif %}; color:{% if loop.first %}#6c63ff{% else %}#666{% endif %}; font-size:13px; font-weight:600; transition:all 0.15s;">
+              {{ emoji }} {{ label }}
+            </span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Subject -->
+      <div style="margin-bottom:18px;">
+        <label style="display:block; font-size:13px; font-weight:600; color:#444; margin-bottom:6px;">Subject <span style="color:#aaa; font-weight:400;">(optional)</span></label>
+        <input type="text" name="subject" placeholder="Brief summary..."
+          style="width:100%; box-sizing:border-box; padding:11px 14px; border:1.5px solid #e0e0e0; border-radius:10px; font-size:14px; outline:none; transition:border 0.2s;"
+          onfocus="this.style.borderColor='#6c63ff'" onblur="this.style.borderColor='#e0e0e0'">
+      </div>
+
+      <!-- Message -->
+      <div style="margin-bottom:24px;">
+        <label style="display:block; font-size:13px; font-weight:600; color:#444; margin-bottom:6px;">Message <span style="color:#e53935;">*</span></label>
+        <textarea name="message" rows="5" placeholder="Tell us what's on your mind..."
+          style="width:100%; box-sizing:border-box; padding:11px 14px; border:1.5px solid #e0e0e0; border-radius:10px; font-size:14px; resize:vertical; outline:none; transition:border 0.2s; font-family:inherit;"
+          onfocus="this.style.borderColor='#6c63ff'" onblur="this.style.borderColor='#e0e0e0'"></textarea>
+      </div>
+
+      <button type="submit"
+        style="width:100%; padding:13px; background:linear-gradient(135deg,#6c63ff,#4ecdc4); color:#fff; border:none; border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; letter-spacing:0.3px;">
+        Send Feedback
+      </button>
+
+    </form>
+  </div>
+
+  <p style="text-align:center; color:#aaa; font-size:12px; margin-top:20px;">
+    Stock Alerts Pro · <a href="https://nattsdigital.com.au" target="_blank" style="color:#aaa;">nattsdigital.com.au</a>
+  </p>
+</div>
+
+<script>
+// Highlight selected chip
+document.querySelectorAll('.type-radio').forEach(radio => {
+  radio.addEventListener('change', () => {
+    document.querySelectorAll('.type-chip').forEach(chip => {
+      chip.style.border = '2px solid #e0e0e0';
+      chip.style.background = '#fff';
+      chip.style.color = '#666';
+    });
+    const selected = document.querySelector(`.type-chip[data-val="${radio.value}"]`);
+    selected.style.border = '2px solid #6c63ff';
+    selected.style.background = '#f0eeff';
+    selected.style.color = '#6c63ff';
+  });
+});
+</script>
+{% endblock %}

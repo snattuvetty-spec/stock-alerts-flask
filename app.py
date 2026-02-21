@@ -783,20 +783,27 @@ def create_checkout_session():
     try:
         plan = request.form.get('plan', 'monthly')
         price_id = STRIPE_PRICE_MONTHLY if plan == 'monthly' else STRIPE_PRICE_ANNUAL
-        
-        checkout_session = stripe.checkout.Session.create(
-            customer_email=session.get('email'),
-            line_items=[{
-                'price': price_id,
-                'quantity': 1,
-            }],
+        username = session['username']
+
+        # Fetch email from DB (not stored in session)
+        user_data = supabase.table('users').select('email, stripe_customer_id').eq('username', username).execute().data
+        user_email = user_data[0]['email'] if user_data else None
+        stripe_customer_id = user_data[0].get('stripe_customer_id') if user_data else None
+
+        session_kwargs = dict(
+            line_items=[{'price': price_id, 'quantity': 1}],
             mode='subscription',
             success_url=request.host_url + 'success?session_id={CHECKOUT_SESSION_ID}',
             cancel_url=request.host_url + 'settings?canceled=true',
-            metadata={
-                'username': session['username']
-            }
+            metadata={'username': username}
         )
+        # Reuse existing Stripe customer if available, otherwise pass email
+        if stripe_customer_id:
+            session_kwargs['customer'] = stripe_customer_id
+        elif user_email:
+            session_kwargs['customer_email'] = user_email
+
+        checkout_session = stripe.checkout.Session.create(**session_kwargs)
         return redirect(checkout_session.url, code=303)
     except Exception as e:
         print(f"Stripe checkout error: {str(e)}")
@@ -938,6 +945,130 @@ def stripe_webhook():
         print(f"🔄 Subscription updated: {subscription['id']}, cancel_at_period_end={subscription.get('cancel_at_period_end')}")
     
     return jsonify({'status': 'success'}), 200
+
+# ============================================================
+# STRIPE CUSTOMER PORTAL
+# ============================================================
+@app.route('/customer-portal', methods=['POST'])
+@login_required
+def customer_portal():
+    """Redirect user to Stripe customer portal to manage subscription"""
+    try:
+        username = session['username']
+        user = supabase.table('users').select('stripe_customer_id').eq('username', username).execute().data
+
+        if not user or not user[0].get('stripe_customer_id'):
+            return redirect(url_for('settings', error='No billing account found. Please subscribe first.'))
+
+        portal_session = stripe.billing_portal.Session.create(
+            customer=user[0]['stripe_customer_id'],
+            return_url=request.host_url + 'settings'
+        )
+        return redirect(portal_session.url, code=303)
+    except Exception as e:
+        print(f"Customer portal error: {str(e)}")
+        return redirect(url_for('settings', error='Unable to open billing portal. Please try again.'))
+
+# ============================================================
+# FEEDBACK
+# ============================================================
+@app.route('/feedback', methods=['GET', 'POST'])
+@login_required
+def feedback():
+    """Feedback form - saves to DB and emails to EMAIL_SENDER"""
+    username = session['username']
+    error = None
+    success = None
+
+    if request.method == 'POST':
+        feedback_type = request.form.get('feedback_type', 'general')
+        subject_input = request.form.get('subject', '').strip()
+        message = request.form.get('message', '').strip()
+
+        if not message:
+            error = "Please enter a message."
+        else:
+            try:
+                # Save to Supabase
+                supabase.table('feedback').insert({
+                    'username': username,
+                    'type': feedback_type,
+                    'subject': subject_input,
+                    'message': message,
+                    'created_at': datetime.now().isoformat()
+                }).execute()
+
+                # Email to support
+                email_subject = f"[{feedback_type.upper()}] {subject_input or 'Feedback from ' + username}"
+                email_body = f"""New feedback received on Stock Alerts Pro
+
+From: {username}
+Type: {feedback_type}
+Subject: {subject_input or '(none)'}
+
+Message:
+{message}
+
+---
+Sent from Stock Alerts Pro feedback form
+nattsdigital.com.au
+"""
+                send_email(os.getenv('EMAIL_SENDER'), email_subject, email_body)
+                success = "Thanks for your feedback! We'll get back to you soon."
+
+            except Exception as e:
+                print(f"Feedback error: {str(e)}")
+                error = "Something went wrong. Please try again."
+
+    return render_template('feedback.html',
+        username=username,
+        name=session.get('name', username),
+        error=error,
+        success=success
+    )
+
+@app.route('/api/feedback', methods=['POST'])
+@login_required
+def feedback_api():
+    """AJAX feedback submission (used by modal)"""
+    username = session['username']
+    data = request.get_json()
+    feedback_type = data.get('type', 'general')
+    subject_input = data.get('subject', '').strip()
+    message = data.get('message', '').strip()
+
+    if not message:
+        return jsonify({'success': False, 'error': 'Message is required'}), 400
+
+    try:
+        supabase.table('feedback').insert({
+            'username': username,
+            'type': feedback_type,
+            'subject': subject_input,
+            'message': message,
+            'created_at': datetime.now().isoformat()
+        }).execute()
+
+        email_subject = f"[{feedback_type.upper()}] {subject_input or 'Feedback from ' + username}"
+        email_body = f"""New feedback received on Stock Alerts Pro
+
+From: {username}
+Type: {feedback_type}
+Subject: {subject_input or '(none)'}
+
+Message:
+{message}
+
+---
+Sent from Stock Alerts Pro feedback form
+nattsdigital.com.au
+"""
+        send_email(os.getenv('EMAIL_SENDER'), email_subject, email_body)
+        return jsonify({'success': True, 'message': "Thanks for your feedback! We'll get back to you soon."})
+
+    except Exception as e:
+        print(f"Feedback API error: {str(e)}")
+        return jsonify({'success': False, 'error': 'Something went wrong. Please try again.'}), 500
 
 # ============================================================
 # SETTINGS
