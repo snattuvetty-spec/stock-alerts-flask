@@ -287,19 +287,22 @@ def send_email(to, subject, body):
 
 def login_required(f):
     from functools import wraps
+    import time
     @wraps(f)
     def decorated(*args, **kwargs):
         if 'username' not in session:
             return redirect(url_for('login'))
-        # Single session enforcement - check token matches DB
+        # Single session enforcement - check token every 60 seconds only
         username = session['username']
         session_token = session.get('session_token')
-        if session_token:
+        last_check = session.get('token_last_check', 0)
+        if session_token and (time.time() - last_check > 60):
             try:
                 user = supabase.table('users').select('session_token').eq('username', username).execute().data
                 if user and user[0].get('session_token') != session_token:
                     session.clear()
                     return redirect(url_for('login', error='Your account was logged in from another device.'))
+                session['token_last_check'] = time.time()
             except:
                 pass  # DB error - allow through rather than lock everyone out
         return f(*args, **kwargs)
