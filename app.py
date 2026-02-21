@@ -125,6 +125,18 @@ def check_alerts_job():
                     
                     settings = settings_result.data[0]
                     user = user_result.data[0]
+
+                    # Skip expired free users - no notifications after trial ends
+                    if not user.get('premium'):
+                        trial_ends = user.get('trial_ends')
+                        if trial_ends:
+                            try:
+                                te = datetime.fromisoformat(trial_ends.replace('Z', ''))
+                                if datetime.now() > te:
+                                    print(f"Skipping alert for {user['username']} - trial expired")
+                                    continue
+                            except:
+                                pass
                     
                     # Send Telegram notification
                     if settings.get('telegram_enabled'):
@@ -339,7 +351,7 @@ def signup():
                     error = "Email already registered. Please use a different email or try forgot password."
                 else:
                     # Create new user
-                    trial_ends = (datetime.now() + timedelta(days=21)).isoformat()
+                    trial_ends = (datetime.now() + timedelta(days=2)).isoformat()
                     supabase.table('users').insert({
                         'username': username,
                         'password_hash': hash_password(password),
@@ -524,15 +536,25 @@ def dashboard():
     needs_setup = False
     if settings:
         s = settings[0]
-        # User needs setup if Telegram is not enabled or no Chat ID
         needs_setup = not s.get('telegram_enabled') or not s.get('telegram_chat_id')
+
+    # Check trial expiry
+    trial_expired = False
+    is_premium = session.get('premium', False)
+    if not is_premium and trial_ends:
+        try:
+            te = datetime.fromisoformat(trial_ends.replace('Z', ''))
+            trial_expired = datetime.now() > te
+        except:
+            pass
 
     return render_template('dashboard.html',
         alerts=alert_list,
         username=username,
         name=session.get('name', username),
-        premium=session.get('premium', False),
+        premium=is_premium,
         days_left=days_left,
+        trial_expired=trial_expired,
         alert_count=len(alerts),
         alert_limit=10,
         needs_setup=needs_setup
@@ -557,9 +579,23 @@ def add_alert():
     user = supabase.table('users').select('*').eq('username', username).execute().data
     is_premium = user[0]['premium'] if user else False
     
+    # Check trial expiry
+    trial_expired = False
+    if not is_premium:
+        trial_ends = user[0].get('trial_ends') if user else None
+        if trial_ends:
+            try:
+                te = datetime.fromisoformat(trial_ends.replace('Z', ''))
+                trial_expired = datetime.now() > te
+            except:
+                pass
+
     if request.method == 'POST':
-        # Enforce limit for non-premium users
-        if not is_premium and alert_count >= alert_limit:
+        # Block expired free users entirely
+        if not is_premium and trial_expired:
+            error = "⚠️ Your free trial has ended. Please upgrade to Premium to add alerts."
+        # Enforce limit for non-premium users still in trial
+        elif not is_premium and alert_count >= alert_limit:
             error = f"⚠️ Free trial limit reached ({alert_limit} alerts). Upgrade to Premium for unlimited alerts!"
         elif not request.form.get('symbol') or not request.form.get('target'):
             error = "Please fill all fields"
@@ -588,7 +624,8 @@ def add_alert():
                           alert_count=alert_count,
                           alert_limit=alert_limit,
                           at_limit=at_limit,
-                          is_premium=is_premium)
+                          is_premium=is_premium,
+                          trial_expired=trial_expired)
 
 @app.route('/price/<symbol>')
 @login_required

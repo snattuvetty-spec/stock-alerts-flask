@@ -27,12 +27,29 @@
 </div>
 {% endif %}
 
+<!-- Trial Expired Banner -->
+{% if not premium and trial_expired %}
+<div style="background:linear-gradient(135deg,#e74c3c,#c0392b);color:white;padding:20px 24px;border-radius:12px;margin-bottom:20px;box-shadow:0 4px 16px rgba(231,76,60,0.35);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <div>
+        <h3 style="margin:0 0 4px;font-size:17px;">⏰ Your free trial has ended</h3>
+        <p style="margin:0;font-size:13px;opacity:0.9;">Upgrade to Premium to keep receiving stock alerts and add new ones.</p>
+    </div>
+    <a href="/settings" style="background:white;color:#e74c3c;padding:10px 22px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;white-space:nowrap;">
+        ⭐ Upgrade Now — .99/mo
+    </a>
+</div>
+{% endif %}
+
 <!-- Status bar -->
 <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;align-items:center;">
     {% if not premium %}
-        {% if days_left > 0 %}
+        {% if trial_expired %}
+        <span style="background:#e74c3c;color:white;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;">
+            ⏰ Trial Ended
+        </span>
+        {% elif days_left > 0 %}
         <span style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;">
-            🎁 Free Trial — {{ days_left }} days left
+            🎁 Free Trial — {{ days_left }} day{{ 's' if days_left != 1 else '' }} left
         </span>
         {% endif %}
         <a href="/settings" style="background:#f39c12;color:white;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;text-decoration:none;">
