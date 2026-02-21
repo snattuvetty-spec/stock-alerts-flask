@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-title">🔐 Admin Dashboard</div>
+
+<!-- ============ STATS CARDS ============ -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:28px;">
+
+  <div class="card">
+    <div class="card-body" style="text-align:center;">
+      <div style="font-size:32px;font-weight:800;color:#2E86AB;">{{ total_users }}</div>
+      <div style="font-size:13px;color:#6b7280;margin-top:4px;">👥 Total Users</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body" style="text-align:center;">
+      <div style="font-size:32px;font-weight:800;color:#27ae60;">{{ premium_count }}</div>
+      <div style="font-size:13px;color:#6b7280;margin-top:4px;">⭐ Premium</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body" style="text-align:center;">
+      <div style="font-size:32px;font-weight:800;color:#667eea;">{{ trial_count }}</div>
+      <div style="font-size:13px;color:#6b7280;margin-top:4px;">🎁 In Trial</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body" style="text-align:center;">
+      <div style="font-size:32px;font-weight:800;color:#e74c3c;">{{ expired_count }}</div>
+      <div style="font-size:13px;color:#6b7280;margin-top:4px;">⏰ Trial Expired</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body" style="text-align:center;">
+      <div style="font-size:32px;font-weight:800;color:#f39c12;">{{ total_alerts }}</div>
+      <div style="font-size:13px;color:#6b7280;margin-top:4px;">🔔 Total Alerts</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body" style="text-align:center;">
+      <div style="font-size:32px;font-weight:800;color:#2ecc71;">{{ active_alerts }}</div>
+      <div style="font-size:13px;color:#6b7280;margin-top:4px;">✅ Active Alerts</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body" style="text-align:center;">
+      <div style="font-size:32px;font-weight:800;color:#6c63ff;">{{ unread_count }}</div>
+      <div style="font-size:13px;color:#6b7280;margin-top:4px;">💬 Unread Feedback</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============ USER BREAKDOWN ============ -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px;">
+
+  <!-- Premium Users -->
+  <div class="card">
+    <div class="card-body">
+      <h3 style="font-size:15px;margin-bottom:12px;">⭐ Premium Users ({{ premium_count }})</h3>
+      {% if premium_users %}
+      <table style="width:100%;font-size:13px;border-collapse:collapse;">
+        <thead><tr style="background:#f8fafc;">
+          <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Username</th>
+          <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Plan</th>
+        </tr></thead>
+        <tbody>
+          {% for u in premium_users %}
+          <tr style="border-top:1px solid #e5e7eb;">
+            <td style="padding:8px;">{{ u.username }}</td>
+            <td style="padding:8px;">
+              <span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;">
+                {{ u.get('subscription_plan', 'monthly')|title }}
+              </span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p style="color:#9ca3af;font-size:13px;">No premium users yet</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Expired Trial Users -->
+  <div class="card">
+    <div class="card-body">
+      <h3 style="font-size:15px;margin-bottom:12px;">⏰ Expired Trial Users ({{ expired_count }})</h3>
+      {% if expired_users %}
+      <table style="width:100%;font-size:13px;border-collapse:collapse;">
+        <thead><tr style="background:#f8fafc;">
+          <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Username</th>
+          <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Email</th>
+        </tr></thead>
+        <tbody>
+          {% for u in expired_users %}
+          <tr style="border-top:1px solid #e5e7eb;">
+            <td style="padding:8px;">{{ u.username }}</td>
+            <td style="padding:8px;color:#6b7280;">{{ u.email }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p style="color:#9ca3af;font-size:13px;">No expired users</p>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+
+<!-- ============ FEEDBACK ============ -->
+<div class="card" id="feedback">
+  <div class="card-body">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+      <h3 style="font-size:16px;margin:0;">💬 Feedback
+        {% if unread_count > 0 %}
+        <span style="background:#e74c3c;color:white;font-size:11px;padding:2px 8px;border-radius:10px;margin-left:6px;">{{ unread_count }} new</span>
+        {% endif %}
+      </h3>
+      <!-- Type filter -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        {% for t in ['all','general','bug','feature','billing'] %}
+        <a href="/admin?type={{ t }}#feedback"
+           style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;text-decoration:none;
+                  background:{{ '#6c63ff' if filter_type == t else '#f3f4f6' }};
+                  color:{{ 'white' if filter_type == t else '#6b7280' }};">
+          {{ t|title }}
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% if feedback %}
+    <div style="display:grid;gap:12px;">
+      {% for f in feedback %}
+      <div style="border:1px solid {% if not f.get('read') %}#6c63ff{% else %}#e5e7eb{% endif %};
+                  border-radius:10px;padding:16px;background:{% if not f.get('read') %}#fafafe{% else %}#fff{% endif %};">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+          <div style="flex:1;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+              <!-- Type badge -->
+              {% set type_colors = {'bug':'#fce4ec:#c62828', 'feature':'#e8f5e9:#2e7d32', 'billing':'#e3f2fd:#1976d2', 'general':'#f3f4f6:#374151'} %}
+              <span style="background:{{ type_colors.get(f.get('type','general'), '#f3f4f6:#374151').split(':')[0] }};
+                           color:{{ type_colors.get(f.get('type','general'), '#f3f4f6:#374151').split(':')[1] }};
+                           padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">
+                {{ f.get('type','general')|upper }}
+              </span>
+              <span style="font-weight:700;font-size:14px;">{{ f.username }}</span>
+              {% if f.get('subject') %}
+              <span style="color:#6b7280;font-size:13px;">— {{ f.subject }}</span>
+              {% endif %}
+              {% if not f.get('read') %}
+              <span style="background:#6c63ff;color:white;font-size:10px;padding:1px 6px;border-radius:6px;">NEW</span>
+              {% endif %}
+            </div>
+            <p style="color:#374151;font-size:14px;line-height:1.5;margin:0 0 6px;">{{ f.message }}</p>
+            <div style="color:#9ca3af;font-size:11px;">{{ f.get('created_at', '')[:16]|replace('T',' ') }}</div>
+          </div>
+          <!-- Actions -->
+          <div style="display:flex;gap:6px;flex-shrink:0;">
+            {% if not f.get('read') %}
+            <form method="POST" action="/admin/feedback/read/{{ f.id }}" style="margin:0;">
+              <button type="submit" style="background:#e8f5e9;color:#2e7d32;border:none;padding:6px 10px;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;">
+                ✓ Read
+              </button>
+            </form>
+            {% endif %}
+            <form method="POST" action="/admin/feedback/delete/{{ f.id }}"
+                  onsubmit="return confirm('Delete this feedback?')" style="margin:0;">
+              <button type="submit" style="background:#fde8e8;color:#c0392b;border:none;padding:6px 10px;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;">
+                🗑️
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:32px;color:#9ca3af;">
+      <div style="font-size:36px;margin-bottom:8px;">💬</div>
+      <p>No feedback yet{% if filter_type != 'all' %} for this type{% endif %}</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

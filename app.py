@@ -572,6 +572,28 @@ def dashboard():
         except:
             pass
 
+    # Get subscription renewal info for premium users
+    renewal_date = None
+    days_to_renewal = None
+    subscription_plan = None
+    if is_premium:
+        try:
+            user_data = supabase.table('users').select(
+                'stripe_subscription_id, subscription_plan'
+            ).eq('username', username).execute().data
+            if user_data:
+                subscription_plan = user_data[0].get('subscription_plan', 'monthly')
+                sub_id = user_data[0].get('stripe_subscription_id')
+                if sub_id:
+                    sub = stripe.Subscription.retrieve(sub_id)
+                    renewal_ts = sub.get('current_period_end')
+                    if renewal_ts:
+                        renewal_dt = datetime.fromtimestamp(renewal_ts)
+                        renewal_date = renewal_dt.strftime('%d %b %Y')
+                        days_to_renewal = (renewal_dt - datetime.now()).days
+        except Exception as e:
+            print(f"Renewal fetch error: {str(e)}")
+
     return render_template('dashboard.html',
         alerts=alert_list,
         username=username,
@@ -581,7 +603,10 @@ def dashboard():
         trial_expired=trial_expired,
         alert_count=len(alerts),
         alert_limit=10,
-        needs_setup=needs_setup
+        needs_setup=needs_setup,
+        subscription_plan=subscription_plan,
+        renewal_date=renewal_date,
+        days_to_renewal=days_to_renewal,
     )
 
 # ============================================================
@@ -1208,6 +1233,99 @@ def settings():
         error=error,
         success=success
     )
+
+
+# ============================================================
+# ADMIN PAGE
+# ============================================================
+@app.route('/admin')
+@login_required
+def admin():
+    """Admin dashboard - only accessible to admin user"""
+    if session.get('username') != 'admin':
+        return redirect(url_for('dashboard'))
+
+    try:
+        # ---- Users stats ----
+        all_users = supabase.table('users').select('*').execute().data or []
+        total_users = len(all_users)
+
+        now = datetime.now()
+        premium_users = []
+        trial_users = []
+        expired_users = []
+
+        for u in all_users:
+            if u.get('premium'):
+                premium_users.append(u)
+            else:
+                trial_ends = u.get('trial_ends')
+                if trial_ends:
+                    try:
+                        te = datetime.fromisoformat(trial_ends.replace('Z', ''))
+                        if now > te:
+                            expired_users.append(u)
+                        else:
+                            trial_users.append(u)
+                    except:
+                        trial_users.append(u)
+                else:
+                    trial_users.append(u)
+
+        # ---- Alerts stats ----
+        all_alerts = supabase.table('alerts').select('id, enabled').execute().data or []
+        total_alerts = len(all_alerts)
+        active_alerts = sum(1 for a in all_alerts if a.get('enabled'))
+
+        # ---- Feedback ----
+        filter_type = request.args.get('type', 'all')
+        feedback_query = supabase.table('feedback').select('*').order('created_at', desc=True)
+        all_feedback = feedback_query.execute().data or []
+        if filter_type != 'all':
+            all_feedback = [f for f in all_feedback if f.get('type') == filter_type]
+        unread_count = sum(1 for f in all_feedback if not f.get('read'))
+
+        # ---- Recent signups (last 5) ----
+        recent_users = sorted(all_users, key=lambda u: u.get('id', ''), reverse=True)[:5]
+
+        return render_template('admin.html',
+            total_users=total_users,
+            premium_count=len(premium_users),
+            trial_count=len(trial_users),
+            expired_count=len(expired_users),
+            total_alerts=total_alerts,
+            active_alerts=active_alerts,
+            feedback=all_feedback,
+            unread_count=unread_count,
+            filter_type=filter_type,
+            recent_users=recent_users,
+            premium_users=premium_users,
+            trial_users=trial_users,
+            expired_users=expired_users,
+        )
+    except Exception as e:
+        print(f"Admin error: {str(e)}")
+        return f"Admin error: {str(e)}", 500
+
+
+@app.route('/admin/feedback/read/<feedback_id>', methods=['POST'])
+@login_required
+def mark_feedback_read(feedback_id):
+    """Mark feedback as read"""
+    if session.get('username') != 'admin':
+        return redirect(url_for('dashboard'))
+    supabase.table('feedback').update({'read': True}).eq('id', feedback_id).execute()
+    return redirect(url_for('admin') + '#feedback')
+
+
+@app.route('/admin/feedback/delete/<feedback_id>', methods=['POST'])
+@login_required
+def delete_feedback(feedback_id):
+    """Delete feedback entry"""
+    if session.get('username') != 'admin':
+        return redirect(url_for('dashboard'))
+    supabase.table('feedback').delete().eq('id', feedback_id).execute()
+    return redirect(url_for('admin') + '#feedback')
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 8502))
