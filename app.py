@@ -334,6 +334,9 @@ def login():
                         session['premium'] = user.get('premium', False)
                         session['trial_ends'] = user.get('trial_ends', '')
                         session['session_token'] = token
+                        # Redirect admin to admin page
+                        if user['username'] == 'admin':
+                            return redirect(url_for('admin'))
                         return redirect(url_for('dashboard'))
             error = "Invalid username or password"
         except Exception as e:
