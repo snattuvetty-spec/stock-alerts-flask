@@ -180,16 +180,8 @@ scheduler = BackgroundScheduler(daemon=True)
 scheduler.add_job(func=check_alerts_job, trigger="interval", minutes=5)
 
 # Add self-ping to prevent Render free tier from sleeping
-def keep_alive():
-    """Ping self to prevent Render spin-down"""
-    try:
-        app_url = os.getenv('APP_URL', 'https://stock-alerts-flask.onrender.com')
-        requests.get(app_url + '/health', timeout=25)
-        print("Keep-alive ping sent")
-    except Exception as e:
-        print(f"Keep-alive error: {str(e)}")  # Log but never crash
-
-scheduler.add_job(func=keep_alive, trigger="interval", minutes=10)
+# Keep-alive disabled - using UptimeRobot instead
+# def keep_alive(): ...
 
 try:
     scheduler.start()
