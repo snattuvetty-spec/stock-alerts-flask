@@ -104,6 +104,16 @@
             </div>
             {% endif %}
             
+            <!-- Manage via Stripe Portal -->
+            <form method="POST" action="/customer-portal" style="margin:0 0 12px;">
+                <button type="submit" class="btn btn-outline" style="width:100%;border-color:#6c63ff;color:#6c63ff;font-weight:600;">
+                    🔧 Manage Subscription &amp; Billing
+                </button>
+            </form>
+            <div style="font-size:12px;color:#6b7280;margin-bottom:16px;">
+                Update payment method, view invoices, or cancel via secure Stripe portal
+            </div>
+
             <form method="POST" action="/cancel-subscription" 
                   onsubmit="return confirm('Cancel subscription? You\'ll keep access until the end of your billing period.');"
                   style="margin:0;">

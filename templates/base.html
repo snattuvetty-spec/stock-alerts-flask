@@ -441,5 +441,18 @@ function dismissInstallBanner() {
 </script>
 
 {% block scripts %}{% endblock %}
+
+{% if session.username %}
+<!-- Floating Feedback Button -->
+<a href="/feedback"
+   style="position:fixed;bottom:24px;right:24px;background:linear-gradient(135deg,#6c63ff,#4ecdc4);
+          color:#fff;padding:12px 18px;border-radius:50px;font-size:13px;font-weight:700;
+          text-decoration:none;box-shadow:0 4px 16px rgba(108,99,255,0.4);z-index:998;
+          display:flex;align-items:center;gap:6px;transition:transform 0.15s;"
+   onmouseover="this.style.transform='scale(1.05)'"
+   onmouseout="this.style.transform='scale(1)'">
+  💬 Feedback
+</a>
+{% endif %}
 </body>
 </html>
