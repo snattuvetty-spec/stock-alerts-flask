@@ -44,21 +44,24 @@
 <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;align-items:center;">
     {% if not premium %}
         {% if trial_expired %}
-        <span style="background:#e74c3c;color:white;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;">
-            ⏰ Trial Ended
-        </span>
+        <button onclick="document.getElementById('subModal').classList.add('active')"
+                style="background:#e74c3c;color:white;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;border:none;cursor:pointer;">
+            ⏰ Trial Ended ▾
+        </button>
         {% elif days_left > 0 %}
-        <span style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;">
-            🎁 Free Trial — {{ days_left }} day{{ 's' if days_left != 1 else '' }} left
-        </span>
+        <button onclick="document.getElementById('subModal').classList.add('active')"
+                style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;border:none;cursor:pointer;">
+            🎁 Free Trial — {{ days_left }} day{{ 's' if days_left != 1 else '' }} left ▾
+        </button>
         {% endif %}
         <a href="/settings" style="background:#f39c12;color:white;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;text-decoration:none;">
             ⭐ Upgrade to Premium
         </a>
     {% else %}
-        <span style="background:#27ae60;color:white;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;">
-            ⭐ Premium Active
-        </span>
+        <button onclick="document.getElementById('subModal').classList.add('active')"
+                style="background:#27ae60;color:white;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;border:none;cursor:pointer;">
+            ⭐ Premium Active ▾
+        </button>
     {% endif %}
     <span style="background:#e8f4f8;color:#2E86AB;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;">
         {% if premium %}
@@ -191,6 +194,81 @@
 </div>
 {% endif %}
 </div>{# end alerts-wrapper #}
+
+<!-- Subscription Info Modal -->
+<div class="modal-overlay" id="subModal">
+  <div class="modal" style="max-width:380px;">
+    <h3 style="margin-bottom:16px;">📋 Subscription Details</h3>
+
+    {% if premium %}
+      <div style="display:grid;gap:12px;">
+
+        <div style="background:#e8f5e9;border-radius:8px;padding:14px;">
+          <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">STATUS</div>
+          <div style="font-weight:700;color:#27ae60;font-size:15px;">⭐ Premium Active</div>
+        </div>
+
+        <div style="background:#f8fafc;border-radius:8px;padding:14px;">
+          <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">PLAN</div>
+          <div style="font-weight:600;font-size:15px;">
+            {% if subscription_plan == 'annual' %}
+              🎁 Annual Plan — AUD $49/year
+            {% else %}
+              💳 Monthly Plan — AUD $4.99/month
+            {% endif %}
+          </div>
+        </div>
+
+        {% if renewal_date %}
+        <div style="background:#f8fafc;border-radius:8px;padding:14px;">
+          <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">
+            {% if subscription_plan == 'annual' %}RENEWAL DATE{% else %}NEXT BILLING DATE{% endif %}
+          </div>
+          <div style="font-weight:600;font-size:15px;">📅 {{ renewal_date }}</div>
+          {% if days_to_renewal is not none %}
+          <div style="font-size:12px;color:#6b7280;margin-top:4px;">
+            {% if days_to_renewal == 0 %}Renews today
+            {% elif days_to_renewal == 1 %}Renews tomorrow
+            {% else %}{{ days_to_renewal }} days to renewal{% endif %}
+          </div>
+          {% endif %}
+        </div>
+        {% endif %}
+
+      </div>
+
+    {% elif trial_expired %}
+      <div style="background:#fde8e8;border-radius:8px;padding:14px;margin-bottom:12px;">
+        <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">STATUS</div>
+        <div style="font-weight:700;color:#e74c3c;font-size:15px;">⏰ Trial Expired</div>
+      </div>
+      <p style="color:#6b7280;font-size:14px;margin-bottom:16px;">Upgrade to Premium to continue receiving stock alerts.</p>
+
+    {% else %}
+      <div style="background:#f0eeff;border-radius:8px;padding:14px;margin-bottom:12px;">
+        <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">STATUS</div>
+        <div style="font-weight:700;color:#667eea;font-size:15px;">🎁 Free Trial</div>
+      </div>
+      <div style="background:#f8fafc;border-radius:8px;padding:14px;">
+        <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">DAYS REMAINING</div>
+        <div style="font-weight:700;font-size:22px;color:#374151;">
+          {{ days_left }} day{{ 's' if days_left != 1 else '' }}
+        </div>
+      </div>
+    {% endif %}
+
+    <div style="display:flex;gap:10px;margin-top:20px;">
+      <button onclick="document.getElementById('subModal').classList.remove('active')"
+              class="btn btn-outline" style="flex:1;">Close</button>
+      {% if not premium %}
+      <a href="/settings" class="btn btn-primary" style="flex:1;justify-content:center;">⭐ Upgrade</a>
+      {% else %}
+      <a href="/settings" class="btn btn-primary" style="flex:1;justify-content:center;">Manage</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
