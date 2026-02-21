@@ -10,6 +10,20 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'DM Sans', sans-serif; background: linear-gradient(135deg, #e8f4f8 0%, #f0f9ff 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
         .auth-card { background: white; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.10); width: 100%; max-width: 420px; padding: 36px; }
+
+        /* Mobile: full screen card */
+        @media (max-width: 480px) {
+            body { padding: 0; align-items: stretch; background: white; }
+            .auth-card { border-radius: 0; box-shadow: none; min-height: 100vh; padding: 48px 24px 32px; display: flex; flex-direction: column; justify-content: center; }
+            footer { padding-bottom: 24px; }
+        }
+
+        /* Loading spinner */
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .btn-spinner { display: none; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; margin-right: 8px; }
+        .btn.loading .btn-spinner { display: inline-block; }
+        .btn.loading .btn-text { opacity: 0.8; }
+        .btn { display: flex; align-items: center; justify-content: center; gap: 4px; }
         .auth-logo { text-align: center; margin-bottom: 28px; }
         .auth-logo h1 { font-size: 24px; font-weight: 700; color: var(--brand); margin-top: 10px; }
         .auth-logo p { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
@@ -55,7 +69,7 @@
             <label>Password</label>
             <input type="password" name="password" autocomplete="current-password" placeholder="Enter your password" required>
         </div>
-        <button type="submit" class="btn">🔐 Login</button>
+        <button type="submit" class="btn" id="loginBtn"><span class="btn-spinner"></span><span class="btn-text">🔐 Login</span></button>
     </form>
 
     <div class="disclaimer">
@@ -63,5 +77,19 @@
     </div>
 </div>
 <footer>© 2026 Natts Digital. All rights reserved.</footer>
+<script>
+document.querySelector('form').addEventListener('submit', function() {
+    const btn = document.getElementById('loginBtn');
+    btn.classList.add('loading');
+    btn.querySelector('.btn-text').textContent = 'Logging in...';
+    btn.disabled = true;
+    // Re-enable after 8s in case of server error
+    setTimeout(() => {
+        btn.classList.remove('loading');
+        btn.querySelector('.btn-text').textContent = '🔐 Login';
+        btn.disabled = false;
+    }, 8000);
+});
+</script>
 </body>
 </html>
