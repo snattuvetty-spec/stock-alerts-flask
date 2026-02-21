@@ -221,6 +221,10 @@
 
         {% if renewal_date %}
         <div style="background:#f8fafc;border-radius:8px;padding:14px;">
+          {% if renewal_date == 'Permanent' %}
+          <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">SUBSCRIPTION</div>
+          <div style="font-weight:600;font-size:15px;">♾️ Permanent Access</div>
+          {% else %}
           <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">
             {% if subscription_plan == 'annual' %}RENEWAL DATE{% else %}NEXT BILLING DATE{% endif %}
           </div>
@@ -231,6 +235,7 @@
             {% elif days_to_renewal == 1 %}Renews tomorrow
             {% else %}{{ days_to_renewal }} days to renewal{% endif %}
           </div>
+          {% endif %}
           {% endif %}
         </div>
         {% endif %}

@@ -580,13 +580,21 @@ def dashboard():
                 sub_id = user_data[0].get('stripe_subscription_id')
                 if sub_id:
                     sub = stripe.Subscription.retrieve(sub_id)
-                    renewal_ts = sub.get('current_period_end')
+                    # Try both dict and attribute access
+                    renewal_ts = sub.get('current_period_end') if isinstance(sub, dict) else getattr(sub, 'current_period_end', None)
                     if renewal_ts:
-                        renewal_dt = datetime.fromtimestamp(renewal_ts)
+                        renewal_dt = datetime.fromtimestamp(int(renewal_ts))
                         renewal_date = renewal_dt.strftime('%d %b %Y')
-                        days_to_renewal = (renewal_dt - datetime.now()).days
+                        days_to_renewal = max(0, (renewal_dt - datetime.now()).days)
+                        print(f"Renewal date for {username}: {renewal_date} ({days_to_renewal} days)")
+                    else:
+                        print(f"No current_period_end for {username}, sub keys: {list(sub.keys()) if isinstance(sub, dict) else 'stripe object'}")
+                else:
+                    # Admin or manually set premium - no Stripe sub
+                    renewal_date = 'Permanent'
+                    days_to_renewal = None
         except Exception as e:
-            print(f"Renewal fetch error: {str(e)}")
+            print(f"Renewal fetch error for {username}: {str(e)}")
 
     return render_template('dashboard.html',
         alerts=alert_list,
@@ -1366,20 +1374,26 @@ def admin_export():
             plan = u.get('subscription_plan', 'monthly')
             trial_ends = u.get('trial_ends', '')
 
+            username_val = u.get('username', '')
             if is_premium:
                 user_type = 'Premium'
-                plan_label = 'Monthly' if plan == 'monthly' else 'Yearly'
-                # Try to get renewal date from Stripe
-                expiry_label = 'Active'
-                try:
-                    sub_id = u.get('stripe_subscription_id')
-                    if sub_id:
+                # Admin has no Stripe subscription - permanent
+                if username_val == 'admin' or not u.get('stripe_subscription_id'):
+                    plan_label = 'Admin' if username_val == 'admin' else ('Monthly' if plan == 'monthly' else 'Yearly')
+                    expiry_label = 'Permanent' if username_val == 'admin' else 'Active'
+                else:
+                    plan_label = 'Monthly' if plan == 'monthly' else 'Yearly'
+                    expiry_label = 'Active'
+                    try:
+                        sub_id = u.get('stripe_subscription_id')
                         sub = stripe.Subscription.retrieve(sub_id)
                         renewal_ts = sub.get('current_period_end')
                         if renewal_ts:
-                            expiry_label = datetime.fromtimestamp(renewal_ts).strftime('%d %b %Y')
-                except:
-                    pass
+                            renewal_dt = datetime.fromtimestamp(renewal_ts)
+                            expiry_label = f"Renewal: {renewal_dt.strftime('%d %b %Y')}"
+                    except Exception as e:
+                        print(f"Stripe renewal fetch error for {username_val}: {e}")
+                        expiry_label = 'Renewal: Unknown'
             else:
                 plan_label = 'Free Trial'
                 if trial_ends:
@@ -1387,13 +1401,13 @@ def admin_export():
                         te = datetime.fromisoformat(trial_ends.replace('Z', ''))
                         if now > te:
                             user_type = 'Expired Trial'
-                            expiry_label = te.strftime('%d %b %Y') + ' (Expired)'
+                            expiry_label = f"Expired: {te.strftime('%d %b %Y')}"
                         else:
                             user_type = 'Free Trial'
-                            expiry_label = te.strftime('%d %b %Y')
+                            expiry_label = f"Expiry: {te.strftime('%d %b %Y')}"
                     except:
                         user_type = 'Free Trial'
-                        expiry_label = trial_ends[:10]
+                        expiry_label = f"Expiry: {trial_ends[:10]}"
                 else:
                     user_type = 'Free Trial'
                     expiry_label = 'Unknown'
