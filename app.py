@@ -184,10 +184,10 @@ def keep_alive():
     """Ping self to prevent Render spin-down"""
     try:
         app_url = os.getenv('APP_URL', 'https://stock-alerts-flask.onrender.com')
-        requests.get(app_url, timeout=5)
+        requests.get(app_url + '/health', timeout=25)
         print("Keep-alive ping sent")
     except Exception as e:
-        print(f"Keep-alive error: {str(e)}")
+        print(f"Keep-alive error: {str(e)}")  # Log but never crash
 
 scheduler.add_job(func=keep_alive, trigger="interval", minutes=10)
 
@@ -291,6 +291,17 @@ def login_required(f):
     def decorated(*args, **kwargs):
         if 'username' not in session:
             return redirect(url_for('login'))
+        # Single session enforcement - check token matches DB
+        username = session['username']
+        session_token = session.get('session_token')
+        if session_token:
+            try:
+                user = supabase.table('users').select('session_token').eq('username', username).execute().data
+                if user and user[0].get('session_token') != session_token:
+                    session.clear()
+                    return redirect(url_for('login', error='Your account was logged in from another device.'))
+            except:
+                pass  # DB error - allow through rather than lock everyone out
         return f(*args, **kwargs)
     return decorated
 
@@ -312,10 +323,14 @@ def login():
             for user in result.data:
                 if user['username'].lower() == username.lower():
                     if verify_password(password, user['password_hash']):
+                        # Generate unique session token for single-session enforcement
+                        token = ''.join(random.choices(string.ascii_letters + string.digits, k=32))
+                        supabase.table('users').update({'session_token': token}).eq('username', user['username']).execute()
                         session['username'] = user['username']
                         session['name'] = user['name']
                         session['premium'] = user.get('premium', False)
                         session['trial_ends'] = user.get('trial_ends', '')
+                        session['session_token'] = token
                         return redirect(url_for('dashboard'))
             error = "Invalid username or password"
         except Exception as e:
@@ -351,7 +366,7 @@ def signup():
                     error = "Email already registered. Please use a different email or try forgot password."
                 else:
                     # Create new user
-                    trial_ends = (datetime.now() + timedelta(days=21)).isoformat()
+                    trial_ends = (datetime.now() + timedelta(days=2)).isoformat()
                     supabase.table('users').insert({
                         'username': username,
                         'password_hash': hash_password(password),
@@ -487,6 +502,12 @@ Please copy this, login, and change it in Settings immediately."""
 
 @app.route('/logout')
 def logout():
+    # Clear session token from DB on logout
+    if 'username' in session:
+        try:
+            supabase.table('users').update({'session_token': None}).eq('username', session['username']).execute()
+        except:
+            pass
     session.clear()
     return redirect(url_for('login'))
 
