@@ -383,8 +383,7 @@ def signup():
                         'email': email,
                         'email_enabled': False,
                         'telegram_enabled': False,
-                        'notification_method': 'telegram',
-                        'setup_complete': False
+                        'notification_method': 'telegram'
                     }).execute()
                     success = """🎉 Welcome to Stock Alerts Pro!
 
