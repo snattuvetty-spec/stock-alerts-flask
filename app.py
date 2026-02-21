@@ -1329,6 +1329,122 @@ def delete_feedback(feedback_id):
     supabase.table('feedback').delete().eq('id', feedback_id).execute()
     return redirect(url_for('admin') + '#feedback')
 
+
+@app.route('/admin/export')
+@login_required
+def admin_export():
+    """Export all users as Excel file"""
+    if session.get('username') != 'admin':
+        return redirect(url_for('dashboard'))
+
+    try:
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment
+        from flask import make_response
+        import io
+
+        all_users = supabase.table('users').select('*').execute().data or []
+        now = datetime.now()
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = 'Users'
+
+        # Header row
+        headers = ['Username', 'User Type', 'Plan', 'Expiry / Renewal Date', 'Email']
+        header_fill = PatternFill('solid', start_color='2E86AB')
+        header_font = Font(bold=True, color='FFFFFF', name='Arial', size=11)
+
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+
+        ws.row_dimensions[1].height = 22
+
+        # Column widths
+        col_widths = [20, 20, 18, 25, 35]
+        for i, width in enumerate(col_widths, 1):
+            ws.column_dimensions[ws.cell(row=1, column=i).column_letter].width = width
+
+        # Data rows
+        for row_idx, u in enumerate(all_users, 2):
+            is_premium = u.get('premium', False)
+            plan = u.get('subscription_plan', 'monthly')
+            trial_ends = u.get('trial_ends', '')
+
+            if is_premium:
+                user_type = 'Premium'
+                plan_label = 'Monthly' if plan == 'monthly' else 'Yearly'
+                # Try to get renewal date from Stripe
+                expiry_label = 'Active'
+                try:
+                    sub_id = u.get('stripe_subscription_id')
+                    if sub_id:
+                        sub = stripe.Subscription.retrieve(sub_id)
+                        renewal_ts = sub.get('current_period_end')
+                        if renewal_ts:
+                            expiry_label = datetime.fromtimestamp(renewal_ts).strftime('%d %b %Y')
+                except:
+                    pass
+            else:
+                plan_label = 'Free Trial'
+                if trial_ends:
+                    try:
+                        te = datetime.fromisoformat(trial_ends.replace('Z', ''))
+                        if now > te:
+                            user_type = 'Expired Trial'
+                            expiry_label = te.strftime('%d %b %Y') + ' (Expired)'
+                        else:
+                            user_type = 'Free Trial'
+                            expiry_label = te.strftime('%d %b %Y')
+                    except:
+                        user_type = 'Free Trial'
+                        expiry_label = trial_ends[:10]
+                else:
+                    user_type = 'Free Trial'
+                    expiry_label = 'Unknown'
+
+            # Row fill alternating
+            row_fill = PatternFill('solid', start_color='EBF5FB') if row_idx % 2 == 0 else PatternFill('solid', start_color='FFFFFF')
+
+            row_data = [u.get('username',''), user_type, plan_label, expiry_label, u.get('email','')]
+            for col_idx, value in enumerate(row_data, 1):
+                cell = ws.cell(row=row_idx, column=col_idx, value=value)
+                cell.fill = row_fill
+                cell.font = Font(name='Arial', size=10)
+                cell.alignment = Alignment(vertical='center')
+
+                # Colour user type cell
+                if col_idx == 2:
+                    if user_type == 'Premium':
+                        cell.font = Font(name='Arial', size=10, bold=True, color='1E8449')
+                    elif user_type == 'Expired Trial':
+                        cell.font = Font(name='Arial', size=10, bold=True, color='C0392B')
+                    else:
+                        cell.font = Font(name='Arial', size=10, bold=True, color='5B2C8D')
+
+        # Summary row at bottom
+        summary_row = len(all_users) + 3
+        ws.cell(row=summary_row, column=1, value=f'Total Users: {len(all_users)}').font = Font(bold=True, name='Arial')
+        ws.cell(row=summary_row, column=2, value=f'Generated: {now.strftime("%d %b %Y %H:%M")}').font = Font(name='Arial', color='888888')
+
+        # Save to bytes
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+        filename = f"stockalertspro_users_{now.strftime('%Y%m%d')}.xlsx"
+        response = make_response(output.read())
+        response.headers['Content-Disposition'] = f'attachment; filename={filename}'
+        response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        return response
+
+    except Exception as e:
+        print(f"Export error: {str(e)}")
+        return f"Export error: {str(e)}", 500
+
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 8502))
     print(f"Starting Flask app on port {port}...")

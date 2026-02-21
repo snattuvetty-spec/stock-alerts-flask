@@ -2,7 +2,15 @@
 {% block title %}Admin Dashboard{% endblock %}
 
 {% block content %}
-<div class="page-title">🔐 Admin Dashboard</div>
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+  <div class="page-title" style="margin-bottom:0;">🔐 Admin Dashboard</div>
+  <a href="/admin/export"
+     style="background:linear-gradient(135deg,#27ae60,#2ecc71);color:white;padding:10px 20px;
+            border-radius:8px;text-decoration:none;font-size:14px;font-weight:700;
+            box-shadow:0 2px 8px rgba(39,174,96,0.3);display:flex;align-items:center;gap:8px;">
+    📥 Export Users to Excel
+  </a>
+</div>
 
 <!-- ============ STATS CARDS ============ -->
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:28px;">
