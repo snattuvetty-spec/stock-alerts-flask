@@ -351,7 +351,7 @@ def signup():
                     error = "Email already registered. Please use a different email or try forgot password."
                 else:
                     # Create new user
-                    trial_ends = (datetime.now() + timedelta(days=2)).isoformat()
+                    trial_ends = (datetime.now() + timedelta(days=21)).isoformat()
                     supabase.table('users').insert({
                         'username': username,
                         'password_hash': hash_password(password),
