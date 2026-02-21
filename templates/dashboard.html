@@ -35,7 +35,7 @@
         <p style="margin:0;font-size:13px;opacity:0.9;">Upgrade to Premium to keep receiving stock alerts and add new ones.</p>
     </div>
     <a href="/settings" style="background:white;color:#e74c3c;padding:10px 22px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;white-space:nowrap;">
-        ⭐ Upgrade Now — .99/mo
+        ⭐ Upgrade Now — AUD $4.99/mo
     </a>
 </div>
 {% endif %}
@@ -69,6 +69,7 @@
     </span>
 </div>
 
+<div id="alerts-wrapper" {% if trial_expired and not premium %}style="opacity:0.4;pointer-events:none;user-select:none;filter:blur(1px);position:relative;"{% endif %}>
 {% if not alerts %}
 <div class="card">
     <div class="card-body" style="text-align:center;padding:48px 20px;">
@@ -189,6 +190,7 @@
     </div>
 </div>
 {% endif %}
+</div>{# end alerts-wrapper #}
 {% endblock %}
 
 {% block scripts %}
