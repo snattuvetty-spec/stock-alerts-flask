@@ -76,21 +76,33 @@
             margin-bottom: 32px;
         }
         .logo-icon {
-            width: 72px;
-            height: 72px;
-            background: linear-gradient(135deg, #0072ff, #00c6ff);
-            border-radius: 20px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 36px;
+            width: 96px;
+            height: 96px;
+            border-radius: 22px;
+            display: inline-block;
             margin-bottom: 14px;
-            box-shadow: 0 0 32px rgba(0,198,255,0.5), 0 0 64px rgba(0,114,255,0.3);
+            position: relative;
             animation: pulseLogo 3s ease-in-out infinite;
         }
+        .logo-icon::before {
+            content: '';
+            position: absolute;
+            inset: -12px;
+            border-radius: 34px;
+            background: radial-gradient(circle, rgba(255,165,0,0.45) 0%, rgba(0,198,255,0.25) 50%, transparent 75%);
+            animation: pulseLogo 3s ease-in-out infinite;
+            z-index: -1;
+        }
+        .logo-icon img {
+            width: 96px;
+            height: 96px;
+            border-radius: 22px;
+            display: block;
+            filter: drop-shadow(0 0 16px rgba(255,165,0,0.6)) drop-shadow(0 0 32px rgba(0,198,255,0.4));
+        }
         @keyframes pulseLogo {
-            0%, 100% { box-shadow: 0 0 32px rgba(0,198,255,0.5), 0 0 64px rgba(0,114,255,0.3); }
-            50% { box-shadow: 0 0 48px rgba(0,198,255,0.8), 0 0 96px rgba(0,114,255,0.5); }
+            0%, 100% { filter: drop-shadow(0 0 16px rgba(255,165,0,0.5)) drop-shadow(0 0 32px rgba(0,198,255,0.3)); }
+            50% { filter: drop-shadow(0 0 28px rgba(255,165,0,0.9)) drop-shadow(0 0 56px rgba(0,198,255,0.6)); }
         }
         .auth-logo h1 {
             font-family: 'Syne', sans-serif;
@@ -229,7 +241,7 @@
 
 <div class="auth-wrapper">
     <div class="auth-logo">
-        <div class="logo-icon">📊</div>
+        <div class="logo-icon"><img src="/static/icon-192.png" alt="Stock Alerts Pro"></div>
         <h1>Stock Alerts <span>Pro</span></h1>
         <p>By Natts Digital</p>
     </div>
