@@ -197,20 +197,20 @@
 
 <!-- Subscription Info Modal -->
 <div class="modal-overlay" id="subModal">
-  <div class="modal" style="max-width:380px;">
-    <h3 style="margin-bottom:16px;">📋 Subscription Details</h3>
+  <div class="modal" style="max-width:380px;background:#0d1f33;border:1px solid rgba(0,198,255,0.2);box-shadow:0 8px 40px rgba(0,0,0,0.6);">
+    <h3 style="margin-bottom:16px;color:white;font-family:'Syne',sans-serif;">📋 Subscription Details</h3>
 
     {% if premium %}
-      <div style="display:grid;gap:12px;">
+      <div style="display:grid;gap:10px;">
 
-        <div style="background:#e8f5e9;border-radius:8px;padding:14px;">
-          <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">STATUS</div>
-          <div style="font-weight:700;color:#27ae60;font-size:15px;">⭐ Premium Active</div>
+        <div style="background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.25);border-radius:10px;padding:14px;">
+          <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px;letter-spacing:0.5px;">STATUS</div>
+          <div style="font-weight:700;color:#4ade80;font-size:15px;">⭐ Premium Active</div>
         </div>
 
-        <div style="background:#f8fafc;border-radius:8px;padding:14px;">
-          <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">PLAN</div>
-          <div style="font-weight:600;font-size:15px;">
+        <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:14px;">
+          <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px;letter-spacing:0.5px;">PLAN</div>
+          <div style="font-weight:600;font-size:15px;color:white;">
             {% if subscription_plan == 'annual' %}
               🎁 Annual Plan — AUD $49/year
             {% else %}
@@ -220,17 +220,17 @@
         </div>
 
         {% if renewal_date %}
-        <div style="background:#f8fafc;border-radius:8px;padding:14px;">
+        <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:14px;">
           {% if renewal_date == 'Permanent' %}
-          <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">SUBSCRIPTION</div>
-          <div style="font-weight:600;font-size:15px;">♾️ Permanent Access</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px;letter-spacing:0.5px;">SUBSCRIPTION</div>
+          <div style="font-weight:600;font-size:15px;color:white;">♾️ Permanent Access</div>
           {% else %}
-          <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">
+          <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px;letter-spacing:0.5px;">
             {% if subscription_plan == 'annual' %}RENEWAL DATE{% else %}NEXT BILLING DATE{% endif %}
           </div>
-          <div style="font-weight:600;font-size:15px;">📅 {{ renewal_date }}</div>
+          <div style="font-weight:600;font-size:15px;color:white;">📅 {{ renewal_date }}</div>
           {% if days_to_renewal is not none %}
-          <div style="font-size:12px;color:#6b7280;margin-top:4px;">
+          <div style="font-size:12px;color:rgba(0,198,255,0.8);margin-top:4px;">
             {% if days_to_renewal == 0 %}Renews today
             {% elif days_to_renewal == 1 %}Renews tomorrow
             {% else %}{{ days_to_renewal }} days to renewal{% endif %}
@@ -243,32 +243,34 @@
       </div>
 
     {% elif trial_expired %}
-      <div style="background:#fde8e8;border-radius:8px;padding:14px;margin-bottom:12px;">
-        <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">STATUS</div>
-        <div style="font-weight:700;color:#e74c3c;font-size:15px;">⏰ Trial Expired</div>
+      <div style="background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.25);border-radius:10px;padding:14px;margin-bottom:12px;">
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px;letter-spacing:0.5px;">STATUS</div>
+        <div style="font-weight:700;color:#f87171;font-size:15px;">⏰ Trial Expired</div>
       </div>
-      <p style="color:#6b7280;font-size:14px;margin-bottom:16px;">Upgrade to Premium to continue receiving stock alerts.</p>
+      <p style="color:rgba(255,255,255,0.55);font-size:14px;margin-bottom:16px;">Upgrade to Premium to continue receiving stock alerts.</p>
 
     {% else %}
-      <div style="background:#f0eeff;border-radius:8px;padding:14px;margin-bottom:12px;">
-        <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">STATUS</div>
-        <div style="font-weight:700;color:#667eea;font-size:15px;">🎁 Free Trial</div>
+      <div style="background:rgba(102,126,234,0.15);border:1px solid rgba(102,126,234,0.3);border-radius:10px;padding:14px;margin-bottom:10px;">
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px;letter-spacing:0.5px;">STATUS</div>
+        <div style="font-weight:700;color:#a78bfa;font-size:15px;">🎁 Free Trial</div>
       </div>
-      <div style="background:#f8fafc;border-radius:8px;padding:14px;">
-        <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">DAYS REMAINING</div>
-        <div style="font-weight:700;font-size:22px;color:#374151;">
-          {{ days_left }} day{{ 's' if days_left != 1 else '' }}
+      <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:14px;">
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px;letter-spacing:0.5px;">DAYS REMAINING</div>
+        <div style="font-weight:700;font-size:28px;color:white;">
+          {{ days_left }} <span style="font-size:16px;color:rgba(255,255,255,0.5);">day{{ 's' if days_left != 1 else '' }}</span>
         </div>
       </div>
     {% endif %}
 
     <div style="display:flex;gap:10px;margin-top:20px;">
-      <button onclick="document.getElementById('subModal').classList.remove('active')" style="background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.15);"
-              class="btn btn-outline" style="flex:1;">Close</button>
+      <button onclick="document.getElementById('subModal').classList.remove('active')"
+              class="btn" style="flex:1;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);border:1px solid rgba(255,255,255,0.2);">
+        Close
+      </button>
       {% if not premium %}
-      <a href="/settings" class="btn btn-primary" style="flex:1;justify-content:center;background:linear-gradient(135deg,#0072ff,#00c6ff);">⭐ Upgrade</a>
+      <a href="/settings" class="btn" style="flex:1;justify-content:center;background:linear-gradient(135deg,#0072ff,#00c6ff);color:white;font-weight:700;">⭐ Upgrade</a>
       {% else %}
-      <a href="/settings" class="btn btn-primary" style="flex:1;justify-content:center;background:linear-gradient(135deg,#0072ff,#00c6ff);">Manage</a>
+      <a href="/settings" class="btn" style="flex:1;justify-content:center;background:linear-gradient(135deg,#0072ff,#00c6ff);color:white;font-weight:700;">Manage</a>
       {% endif %}
     </div>
   </div>
