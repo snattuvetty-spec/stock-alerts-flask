@@ -263,12 +263,12 @@
     {% endif %}
 
     <div style="display:flex;gap:10px;margin-top:20px;">
-      <button onclick="document.getElementById('subModal').classList.remove('active')"
+      <button onclick="document.getElementById('subModal').classList.remove('active')" style="background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.15);"
               class="btn btn-outline" style="flex:1;">Close</button>
       {% if not premium %}
-      <a href="/settings" class="btn btn-primary" style="flex:1;justify-content:center;">⭐ Upgrade</a>
+      <a href="/settings" class="btn btn-primary" style="flex:1;justify-content:center;background:linear-gradient(135deg,#0072ff,#00c6ff);">⭐ Upgrade</a>
       {% else %}
-      <a href="/settings" class="btn btn-primary" style="flex:1;justify-content:center;">Manage</a>
+      <a href="/settings" class="btn btn-primary" style="flex:1;justify-content:center;background:linear-gradient(135deg,#0072ff,#00c6ff);">Manage</a>
       {% endif %}
     </div>
   </div>

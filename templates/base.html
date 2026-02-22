@@ -273,6 +273,17 @@
         .alert-warning { background: rgba(251,191,36,0.12); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); }
         .alert-info { background: rgba(0,198,255,0.08); color: #00c6ff; border: 1px solid rgba(0,198,255,0.2); }
 
+        /* ROTATING GEAR */
+        @keyframes gearRotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .gear-rotate {
+            display: inline-block;
+            animation: gearRotate 4s linear infinite;
+            transform-origin: center;
+        }
+
         /* TRIAL BADGE */
         .trial-badge {
             background: linear-gradient(135deg, #667eea, #764ba2);
