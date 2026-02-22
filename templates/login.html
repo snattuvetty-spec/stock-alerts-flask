@@ -281,6 +281,10 @@
 <footer>© 2026 Natts Digital. All rights reserved.</footer>
 
 <script>
+// Force scroll to top on load (fixes iOS autocomplete scroll issue)
+window.addEventListener('load', () => window.scrollTo(0, 0));
+document.addEventListener('DOMContentLoaded', () => window.scrollTo(0, 0));
+
 document.querySelector('form').addEventListener('submit', function() {
     const btn = document.getElementById('loginBtn');
     btn.classList.add('loading');
