@@ -1377,10 +1377,15 @@ def admin_export():
             username_val = u.get('username', '')
             if is_premium:
                 user_type = 'Premium'
-                # Admin has no Stripe subscription - permanent
-                if username_val == 'admin' or not u.get('stripe_subscription_id'):
+                # Permanent if admin OR if trial_ends is set to 2099 (SQL-upgraded users)
+                is_permanent = (username_val == 'admin' or
+                                (trial_ends and trial_ends[:10] == '2099-01-01'))
+                if is_permanent:
                     plan_label = 'Admin' if username_val == 'admin' else ('Monthly' if plan == 'monthly' else 'Yearly')
-                    expiry_label = 'Permanent' if username_val == 'admin' else 'Active'
+                    expiry_label = 'Permanent'
+                elif not u.get('stripe_subscription_id'):
+                    plan_label = 'Monthly' if plan == 'monthly' else 'Yearly'
+                    expiry_label = 'Active'
                 else:
                     plan_label = 'Monthly' if plan == 'monthly' else 'Yearly'
                     expiry_label = 'Active'
