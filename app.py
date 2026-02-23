@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify, send_from_directory
 from supabase import create_client, Client
 import bcrypt
 import os
@@ -1453,7 +1453,8 @@ def admin_export():
 
 @app.route('/help')
 def help_page():
-    return send_from_directory('.', 'static_help.html')
+    import os
+    return send_from_directory(os.path.dirname(os.path.abspath(__file__)), 'static_help.html')
 
 
 if __name__ == '__main__':
