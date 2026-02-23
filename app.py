@@ -364,7 +364,7 @@ def signup():
                     error = "Email already registered. Please use a different email or try forgot password."
                 else:
                     # Create new user
-                    trial_ends = (datetime.now() + timedelta(days=2)).isoformat()
+                    trial_ends = (datetime.now() + timedelta(days=21)).isoformat()
                     supabase.table('users').insert({
                         'username': username,
                         'password_hash': hash_password(password),
@@ -1450,6 +1450,11 @@ def admin_export():
     except Exception as e:
         print(f"Export error: {str(e)}")
         return f"Export error: {str(e)}", 500
+
+@app.route('/help')
+def help_page():
+    return send_from_directory('.', 'static_help.html')
+
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 8502))

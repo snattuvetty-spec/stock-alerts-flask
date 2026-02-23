@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stock Alerts Pro — Getting Started Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --brand: #00c6ff;
+    --brand-dark: #0072ff;
+    --navy: #040d1a;
+    --navy2: #0d1f33;
+    --success: #4ade80;
+    --text: #1a1a2e;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: #f8fafc; color: var(--text); }
+
+  /* COVER */
+  .cover {
+    background: var(--navy);
+    color: white;
+    padding: 60px 40px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .cover::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(rgba(0,198,255,0.04) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(0,198,255,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+  .cover-blob {
+    position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.4; pointer-events: none;
+  }
+  .blob1 { width: 400px; height: 300px; background: radial-gradient(circle, #0072ff, transparent); top: -80px; right: -80px; }
+  .blob2 { width: 300px; height: 300px; background: radial-gradient(circle, #00c6ff, transparent); bottom: -60px; left: -60px; }
+  .cover-logo {
+    width: 100px; height: 100px; border-radius: 24px; margin: 0 auto 20px;
+    display: block;
+    filter: drop-shadow(0 0 20px rgba(255,140,0,0.6)) drop-shadow(0 0 40px rgba(0,198,255,0.4));
+    position: relative; z-index: 1;
+  }
+  .cover h1 {
+    font-family: 'Syne', sans-serif; font-size: 36px; font-weight: 800;
+    position: relative; z-index: 1;
+  }
+  .cover h1 span { color: var(--brand); }
+  .cover p { font-size: 16px; color: rgba(255,255,255,0.6); margin-top: 8px; position: relative; z-index: 1; }
+  .cover .subtitle {
+    display: inline-block;
+    background: rgba(0,198,255,0.1);
+    border: 1px solid rgba(0,198,255,0.3);
+    color: var(--brand);
+    padding: 6px 16px; border-radius: 20px;
+    font-size: 13px; font-weight: 600;
+    margin-top: 16px;
+    position: relative; z-index: 1;
+  }
+
+  /* LAYOUT */
+  .container { max-width: 760px; margin: 0 auto; padding: 40px 24px; }
+
+  /* SECTION */
+  .section { margin-bottom: 48px; }
+  .section-header {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 24px; padding-bottom: 14px;
+    border-bottom: 2px solid var(--border);
+  }
+  .step-number {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--brand-dark), var(--brand));
+    color: white; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(0,114,255,0.3);
+  }
+  .section-title { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; color: var(--text); }
+
+  /* STEPS */
+  .step { display: flex; gap: 16px; margin-bottom: 20px; align-items: flex-start; }
+  .step-icon {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, #0072ff22, #00c6ff22);
+    border: 1.5px solid rgba(0,198,255,0.3);
+    color: var(--brand); font-weight: 700; font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 2px;
+  }
+  .step-content h4 { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+  .step-content p { font-size: 14px; color: var(--muted); line-height: 1.6; }
+  .step-content p strong { color: var(--text); }
+
+  /* MOCKUP SCREENS */
+  .mockup-row { display: flex; gap: 16px; margin: 20px 0; flex-wrap: wrap; justify-content: center; }
+
+  .phone-frame {
+    width: 200px;
+    background: #1a1a2e;
+    border-radius: 28px;
+    border: 6px solid #2d2d3f;
+    overflow: hidden;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+    flex-shrink: 0;
+  }
+  .phone-notch {
+    height: 20px; background: #2d2d3f;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .phone-notch-dot { width: 40px; height: 8px; background: #1a1a2e; border-radius: 4px; }
+  .phone-screen { background: var(--navy); padding: 16px 12px; min-height: 320px; }
+
+  /* Login mockup */
+  .mock-logo { text-align: center; margin-bottom: 14px; }
+  .mock-logo-img { width: 44px; height: 44px; border-radius: 10px; }
+  .mock-logo h3 { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 800; color: white; margin-top: 6px; }
+  .mock-logo h3 span { color: #00c6ff; }
+  .mock-logo p { font-size: 9px; color: rgba(255,255,255,0.4); }
+  .mock-tabs { display: flex; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 12px; }
+  .mock-tab { flex: 1; text-align: center; font-size: 9px; font-weight: 600; padding: 6px 0; color: rgba(255,255,255,0.4); }
+  .mock-tab.active { color: #00c6ff; border-bottom: 1.5px solid #00c6ff; }
+  .mock-label { font-size: 8px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .mock-input { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 7px 8px; font-size: 10px; color: rgba(255,255,255,0.6); margin-bottom: 8px; width: 100%; }
+  .mock-btn { background: linear-gradient(135deg, #0072ff, #00c6ff); color: white; border: none; border-radius: 6px; padding: 8px; font-size: 10px; font-weight: 700; width: 100%; text-align: center; margin-top: 4px; }
+  .mock-disclaimer { background: rgba(255,193,7,0.08); border: 1px solid rgba(255,193,7,0.2); border-radius: 6px; padding: 6px; font-size: 8px; color: rgba(255,255,255,0.4); margin-top: 10px; line-height: 1.4; }
+
+  /* Dashboard mockup */
+  .mock-nav { background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; margin: -16px -12px 12px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .mock-nav-brand { display: flex; align-items: center; gap: 5px; font-family: 'Syne', sans-serif; font-size: 9px; font-weight: 800; color: #00c6ff; }
+  .mock-nav-icon { width: 18px; height: 18px; border-radius: 4px; }
+  .mock-nav-links { display: flex; gap: 4px; }
+  .mock-nav-link { font-size: 8px; color: rgba(255,255,255,0.5); padding: 3px 5px; border-radius: 4px; }
+  .mock-nav-link.add { background: linear-gradient(135deg, #0072ff, #00c6ff); color: white; }
+  .mock-page-title { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 800; color: white; margin-bottom: 8px; }
+  .mock-badges { display: flex; gap: 6px; margin-bottom: 10px; }
+  .mock-badge { padding: 3px 8px; border-radius: 10px; font-size: 8px; font-weight: 700; }
+  .mock-badge.premium { background: rgba(39,174,96,0.2); color: #4ade80; border: 1px solid rgba(39,174,96,0.3); }
+  .mock-badge.alerts { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.7); border: 1px solid rgba(255,255,255,0.1); }
+  .mock-table-head { display: flex; background: rgba(0,198,255,0.1); padding: 5px 6px; border-radius: 6px 6px 0 0; }
+  .mock-th { font-size: 7px; font-weight: 700; color: rgba(0,198,255,0.8); text-transform: uppercase; flex: 1; }
+  .mock-row { display: flex; padding: 6px 6px; border-bottom: 1px solid rgba(255,255,255,0.04); align-items: center; }
+  .mock-row:last-child { border-bottom: none; }
+  .mock-symbol { font-size: 10px; font-weight: 700; color: white; flex: 1; }
+  .mock-price { font-size: 9px; color: rgba(255,255,255,0.8); flex: 1; font-family: 'DM Mono', monospace; }
+  .mock-up { color: #4ade80; font-size: 7px; }
+  .mock-dn { color: #f87171; font-size: 7px; }
+  .mock-target { font-size: 9px; color: rgba(255,255,255,0.6); flex: 1; font-family: 'DM Mono', monospace; }
+  .mock-status { font-size: 8px; flex: 1; color: rgba(255,255,255,0.4); }
+
+  /* Telegram mockup */
+  .mock-tg { background: #1c2b3a; border-radius: 10px; padding: 12px; }
+  .mock-tg-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 8px; }
+  .mock-tg-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #2196F3, #00BCD4); display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .mock-tg-name { font-size: 13px; font-weight: 700; color: white; }
+  .mock-tg-sub { font-size: 10px; color: rgba(255,255,255,0.4); }
+  .mock-msg { margin-bottom: 8px; }
+  .mock-msg-bubble { display: inline-block; padding: 8px 12px; border-radius: 12px; font-size: 11px; line-height: 1.5; max-width: 85%; }
+  .mock-msg-bubble.bot { background: #2b5278; color: white; border-radius: 12px 12px 12px 2px; }
+  .mock-msg-bubble.user { background: #766ac8; color: white; border-radius: 12px 12px 2px 12px; float: right; }
+  .mock-msg.right { text-align: right; }
+  .mock-msg-time { font-size: 9px; color: rgba(255,255,255,0.3); margin-top: 2px; }
+  .mock-msg.right .mock-msg-time { text-align: right; }
+
+  /* Settings mockup */
+  .mock-tg-field { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 10px; margin-bottom: 8px; }
+  .mock-tg-field-label { font-size: 8px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
+  .mock-tg-field-val { font-size: 11px; color: white; font-family: 'DM Mono', monospace; }
+  .mock-save-btn { background: linear-gradient(135deg, #0072ff, #00c6ff); color: white; border-radius: 6px; padding: 7px; font-size: 10px; font-weight: 700; text-align: center; }
+
+  /* Alert notification mockup */
+  .mock-alert-notif { background: #1c2b3a; border-radius: 10px; padding: 12px; }
+  .mock-notif-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .mock-notif-app { font-size: 10px; color: rgba(255,255,255,0.5); }
+  .mock-notif-time { font-size: 10px; color: rgba(255,255,255,0.3); margin-left: auto; }
+  .mock-notif-body { background: rgba(255,255,255,0.05); border-radius: 8px; padding: 10px; }
+  .mock-notif-title { font-size: 13px; font-weight: 700; color: white; margin-bottom: 4px; }
+  .mock-notif-text { font-size: 11px; color: rgba(255,255,255,0.7); line-height: 1.5; }
+
+  /* URL box */
+  .url-box {
+    background: var(--navy);
+    border: 1.5px solid rgba(0,198,255,0.3);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex; align-items: center; gap: 12px;
+    margin: 16px 0;
+  }
+  .url-icon { font-size: 24px; }
+  .url-text { font-family: 'DM Mono', monospace; font-size: 15px; color: var(--brand); font-weight: 500; }
+  .url-sub { font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+
+  /* Tip box */
+  .tip-box {
+    background: rgba(0,198,255,0.06);
+    border: 1px solid rgba(0,198,255,0.2);
+    border-left: 4px solid var(--brand);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin: 16px 0;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .tip-box strong { color: var(--brand-dark); }
+
+  .warning-box {
+    background: rgba(251,191,36,0.06);
+    border: 1px solid rgba(251,191,36,0.25);
+    border-left: 4px solid #f59e0b;
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin: 16px 0;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .warning-box strong { color: #d97706; }
+
+  /* OS tabs */
+  .os-tabs { display: flex; gap: 0; margin-bottom: 20px; border: 1.5px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .os-tab { flex: 1; padding: 12px; text-align: center; font-size: 14px; font-weight: 600; background: white; color: var(--muted); border-right: 1.5px solid var(--border); }
+  .os-tab:last-child { border-right: none; }
+  .os-tab.ios { background: var(--navy); color: white; }
+  .os-tab.android { background: #1a3d1a; color: #4ade80; }
+
+  .os-section { background: white; border: 1.5px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+  .os-section h4 { font-size: 16px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+
+  /* Footer */
+  .guide-footer { background: var(--navy); color: rgba(255,255,255,0.4); text-align: center; padding: 24px; font-size: 12px; }
+  .guide-footer strong { color: var(--brand); }
+
+  @media print {
+    .cover { page-break-after: always; }
+    .section { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<div class="cover">
+  <div class="cover-blob blob1"></div>
+  <div class="cover-blob blob2"></div>
+  <img class="cover-logo" src="ICON_PLACEHOLDER" alt="Stock Alerts Pro">
+  <h1>Stock Alerts <span>Pro</span></h1>
+  <p>Getting Started Guide</p>
+  <div class="subtitle">📖 Step-by-step setup for new users</div>
+</div>
+
+<div class="container">
+
+<!-- INTRO -->
+<div style="background:white;border-radius:14px;border:1.5px solid var(--border);padding:24px;margin-bottom:40px;">
+  <h2 style="font-family:'Syne',sans-serif;font-size:18px;margin-bottom:10px;">Welcome to Stock Alerts Pro! 🎉</h2>
+  <p style="color:var(--muted);font-size:14px;line-height:1.7;">
+    Stock Alerts Pro sends you a <strong>Telegram notification</strong> the moment a stock hits your target price — for both US and Australian markets. This guide will get you fully set up in under 5 minutes.
+  </p>
+</div>
+
+<!-- STEP 1: Open the App -->
+<div class="section">
+  <div class="section-header">
+    <div class="step-number">1</div>
+    <h2 class="section-title">Open the App</h2>
+  </div>
+
+  <div class="url-box">
+    <div class="url-icon">🌐</div>
+    <div>
+      <div class="url-text">https://stock-alerts-flask.onrender.com</div>
+      <div class="url-sub">Open this URL in your browser — works on phone and desktop</div>
+    </div>
+  </div>
+
+  <div class="tip-box">
+    <strong>💡 Tip:</strong> Use <strong>Safari on iPhone</strong> or <strong>Chrome on Android</strong> for the best experience and to enable the home screen shortcut later.
+  </div>
+
+  <div class="mockup-row">
+    <div class="phone-frame">
+      <div class="phone-notch"><div class="phone-notch-dot"></div></div>
+      <div class="phone-screen">
+        <div class="mock-logo">
+          <img class="mock-logo-img" src="ICON_PLACEHOLDER" alt="logo">
+          <h3>Stock Alerts <span>Pro</span></h3>
+          <p>By Natts Digital</p>
+        </div>
+        <div class="mock-tabs">
+          <div class="mock-tab active">🔐 Login</div>
+          <div class="mock-tab">📝 Sign Up</div>
+          <div class="mock-tab">🔑 Forgot</div>
+        </div>
+        <div class="mock-label">Username</div>
+        <div class="mock-input">Enter your username</div>
+        <div class="mock-label">Password</div>
+        <div class="mock-input">••••••••</div>
+        <div class="mock-btn">🔐 Login</div>
+        <div class="mock-disclaimer">⚠️ Disclaimer: Stock Alerts Pro provides price notifications only. This is NOT financial advice.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 2: Sign Up -->
+<div class="section">
+  <div class="section-header">
+    <div class="step-number">2</div>
+    <h2 class="section-title">Create Your Account</h2>
+  </div>
+
+  <div class="step">
+    <div class="step-icon">1</div>
+    <div class="step-content">
+      <h4>Tap "📝 Sign Up"</h4>
+      <p>At the top of the login screen, tap the <strong>Sign Up</strong> tab.</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-icon">2</div>
+    <div class="step-content">
+      <h4>Fill in your details</h4>
+      <p>Enter a <strong>username</strong> (no spaces), your <strong>email address</strong>, and a <strong>password</strong> (minimum 6 characters).</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-icon">3</div>
+    <div class="step-content">
+      <h4>Tap "Sign Up"</h4>
+      <p>You'll see a success message. Your <strong>21-day free trial starts immediately</strong> — no credit card required.</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-icon">4</div>
+    <div class="step-content">
+      <h4>Log in</h4>
+      <p>Tap the <strong>Login</strong> tab, enter your username and password, and tap Login.</p>
+    </div>
+  </div>
+
+  <div class="tip-box">
+    <strong>💡 Note:</strong> After logging in you will land on the <strong>Dashboard</strong>. This is your home screen showing all your stock alerts.
+  </div>
+
+  <div class="mockup-row">
+    <div class="phone-frame">
+      <div class="phone-notch"><div class="phone-notch-dot"></div></div>
+      <div class="phone-screen">
+        <div class="mock-nav">
+          <div class="mock-nav-brand">
+            <img class="mock-nav-icon" src="ICON_PLACEHOLDER" alt="logo">
+            Stock Alerts Pro
+          </div>
+          <div class="mock-nav-links">
+            <div class="mock-nav-link">🏠</div>
+            <div class="mock-nav-link add">➕</div>
+            <div class="mock-nav-link">⚙️</div>
+          </div>
+        </div>
+        <div class="mock-page-title">Dashboard</div>
+        <div class="mock-badges">
+          <span class="mock-badge premium">⭐ Premium Active ▾</span>
+          <span class="mock-badge alerts">🔔 0 Alerts</span>
+        </div>
+        <div style="text-align:center;padding:30px 0;">
+          <div style="font-size:28px;margin-bottom:8px;">📭</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.5);">No alerts yet</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:4px;">Add your first stock alert</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 3: Telegram Setup -->
+<div class="section">
+  <div class="section-header">
+    <div class="step-number">3</div>
+    <h2 class="section-title">Set Up Telegram Notifications</h2>
+  </div>
+
+  <p style="color:var(--muted);font-size:14px;margin-bottom:20px;line-height:1.6;">
+    Stock Alerts Pro sends price alerts via <strong>Telegram</strong>. You need to get your personal Chat ID and add it to the app. This takes about 2 minutes.
+  </p>
+
+  <div class="os-section">
+    <h4>📱 Part A — Get Your Telegram Chat ID</h4>
+    <div class="step">
+      <div class="step-icon">1</div>
+      <div class="step-content">
+        <h4>Open Telegram</h4>
+        <p>Install Telegram if you don't have it — available free on the <strong>App Store</strong> and <strong>Google Play</strong>.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-icon">2</div>
+      <div class="step-content">
+        <h4>Search for @userinfobot</h4>
+        <p>In the Telegram search bar, type <strong>@userinfobot</strong> and open the bot.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-icon">3</div>
+      <div class="step-content">
+        <h4>Send any message</h4>
+        <p>Type anything and send it. The bot will immediately reply with your details including your <strong>Chat ID</strong> — a number like <code style="background:#f3f4f6;padding:1px 6px;border-radius:4px;font-family:'DM Mono',monospace;">7327563441</code></p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-icon">4</div>
+      <div class="step-content">
+        <h4>Copy the Chat ID number</h4>
+        <p>Long press on the number and copy it. You'll need it in the next step.</p>
+      </div>
+    </div>
+
+    <div class="mockup-row">
+      <div style="width:220px;">
+        <div class="mock-tg">
+          <div class="mock-tg-header">
+            <div class="mock-tg-avatar">🤖</div>
+            <div>
+              <div class="mock-tg-name">@userinfobot</div>
+              <div class="mock-tg-sub">bot</div>
+            </div>
+          </div>
+          <div class="mock-msg">
+            <div class="mock-msg-bubble user">Hi</div>
+            <div class="mock-msg-time right">4:52 PM ✓✓</div>
+          </div>
+          <div class="mock-msg" style="clear:both;margin-top:8px;">
+            <div class="mock-msg-bubble bot">
+              <strong>Your info:</strong><br>
+              Id: <strong>7327563441</strong><br>
+              First: John<br>
+              Username: @johndoe<br>
+              Lang: en
+            </div>
+            <div class="mock-msg-time">4:52 PM</div>
+          </div>
+        </div>
+        <p style="text-align:center;font-size:11px;color:var(--muted);margin-top:8px;">Copy the number next to "Id:"</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="os-section">
+    <h4>⚙️ Part B — Add Chat ID to Stock Alerts Pro</h4>
+    <div class="step">
+      <div class="step-icon">1</div>
+      <div class="step-content">
+        <h4>Go to Settings</h4>
+        <p>In Stock Alerts Pro, tap the <strong>⚙️ Settings</strong> icon in the top menu.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-icon">2</div>
+      <div class="step-content">
+        <h4>Find "📱 Telegram Notifications"</h4>
+        <p>Scroll down to the Telegram Notifications section.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-icon">3</div>
+      <div class="step-content">
+        <h4>Enable notifications and paste your Chat ID</h4>
+        <p>Tick <strong>"Enable Telegram Notifications"</strong> and paste your Chat ID number in the field.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-icon">4</div>
+      <div class="step-content">
+        <h4>Save Settings and send a test</h4>
+        <p>Tap <strong>"💾 Save Settings"</strong>, then tap <strong>"🧪 Send Test Notification"</strong>. You should receive a Telegram message within seconds!</p>
+      </div>
+    </div>
+
+    <div class="mockup-row">
+      <div class="phone-frame">
+        <div class="phone-notch"><div class="phone-notch-dot"></div></div>
+        <div class="phone-screen">
+          <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:800;color:white;margin-bottom:14px;display:flex;align-items:center;gap:6px;">
+            <span style="animation:none;">⚙️</span> Settings
+          </div>
+          <div style="font-size:11px;font-weight:700;color:white;margin-bottom:10px;">📱 Telegram Notifications</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+            <div style="width:16px;height:16px;background:#00c6ff;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:10px;color:white;">✓</div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.8);">Enable Telegram Notifications</div>
+          </div>
+          <div class="mock-tg-field">
+            <div class="mock-tg-field-label">Telegram Chat ID</div>
+            <div class="mock-tg-field-val">7327563441</div>
+          </div>
+          <div class="mock-save-btn">💾 Save Settings</div>
+          <div style="height:8px;"></div>
+          <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:7px;font-size:10px;color:rgba(255,255,255,0.7);text-align:center;">🧪 Send Test Notification</div>
+        </div>
+      </div>
+      <div style="width:200px;">
+        <div class="mock-alert-notif">
+          <div class="mock-notif-header">
+            <div style="font-size:14px;">💬</div>
+            <div class="mock-notif-app">Telegram</div>
+            <div class="mock-notif-time">now</div>
+          </div>
+          <div class="mock-notif-body">
+            <div class="mock-notif-title">🔔 Stock Alerts Pro</div>
+            <div class="mock-notif-text">
+              ✅ Test notification successful!<br>
+              You will now receive alerts when your stocks hit target prices.
+            </div>
+          </div>
+        </div>
+        <p style="text-align:center;font-size:11px;color:var(--muted);margin-top:8px;">You'll get this on Telegram!</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 4: Add Alert -->
+<div class="section">
+  <div class="section-header">
+    <div class="step-number">4</div>
+    <h2 class="section-title">Add Your First Stock Alert</h2>
+  </div>
+
+  <div class="step">
+    <div class="step-icon">1</div>
+    <div class="step-content">
+      <h4>Tap "➕ Add Alert"</h4>
+      <p>Tap the blue <strong>Add Alert</strong> button in the top navigation bar.</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-icon">2</div>
+    <div class="step-content">
+      <h4>Enter the stock symbol</h4>
+      <p>For <strong>US stocks</strong>: use the ticker symbol e.g. <code style="background:#f3f4f6;padding:1px 6px;border-radius:4px;font-family:'DM Mono',monospace;">AAPL</code>, <code style="background:#f3f4f6;padding:1px 6px;border-radius:4px;font-family:'DM Mono',monospace;">TSLA</code>, <code style="background:#f3f4f6;padding:1px 6px;border-radius:4px;font-family:'DM Mono',monospace;">NVDA</code><br>
+      For <strong>ASX stocks</strong>: add <code style="background:#f3f4f6;padding:1px 6px;border-radius:4px;font-family:'DM Mono',monospace;">.AX</code> suffix e.g. <code style="background:#f3f4f6;padding:1px 6px;border-radius:4px;font-family:'DM Mono',monospace;">CBA.AX</code>, <code style="background:#f3f4f6;padding:1px 6px;border-radius:4px;font-family:'DM Mono',monospace;">BHP.AX</code></p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-icon">3</div>
+    <div class="step-content">
+      <h4>Set your target price and alert type</h4>
+      <p>Enter the price you want to be alerted at. Choose <strong>Above</strong> (alert when price goes up to target) or <strong>Below</strong> (alert when price drops to target).</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-icon">4</div>
+    <div class="step-content">
+      <h4>Save the alert</h4>
+      <p>Tap <strong>Save Alert</strong>. Your alert appears on the dashboard and will monitor the price automatically!</p>
+    </div>
+  </div>
+
+  <div class="mockup-row">
+    <div class="phone-frame">
+      <div class="phone-notch"><div class="phone-notch-dot"></div></div>
+      <div class="phone-screen">
+        <div class="mock-nav">
+          <div class="mock-nav-brand">
+            <img class="mock-nav-icon" src="ICON_PLACEHOLDER" alt="logo">
+            Stock Alerts Pro
+          </div>
+        </div>
+        <div class="mock-page-title" style="font-size:12px;margin-top:4px;margin-bottom:10px;">Dashboard</div>
+        <div class="mock-badges" style="margin-bottom:8px;">
+          <span class="mock-badge premium">⭐ Premium ▾</span>
+          <span class="mock-badge alerts">🔔 3 Alerts</span>
+        </div>
+        <div class="mock-table-head">
+          <div class="mock-th" style="flex:1.2;">Symbol</div>
+          <div class="mock-th">Price</div>
+          <div class="mock-th">Target</div>
+          <div class="mock-th">Status</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.03);border-radius:0 0 8px 8px;overflow:hidden;">
+          <div class="mock-row">
+            <div class="mock-symbol" style="flex:1.2;">AAPL</div>
+            <div class="mock-price">$189.42<br><span class="mock-up">+1.2%</span></div>
+            <div class="mock-target">$195.00</div>
+            <div class="mock-status">⏳</div>
+          </div>
+          <div class="mock-row">
+            <div class="mock-symbol" style="flex:1.2;">TSLA</div>
+            <div class="mock-price">$242.18<br><span class="mock-dn">-2.4%</span></div>
+            <div class="mock-target">$230.00</div>
+            <div class="mock-status">⏳</div>
+          </div>
+          <div class="mock-row">
+            <div class="mock-symbol" style="flex:1.2;">CBA.AX</div>
+            <div class="mock-price">$127.50<br><span class="mock-up">+0.9%</span></div>
+            <div class="mock-target">$125.00</div>
+            <div class="mock-status" style="color:#4ade80;">✅</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 5: Save Shortcut -->
+<div class="section">
+  <div class="section-header">
+    <div class="step-number">5</div>
+    <h2 class="section-title">Save to Your Home Screen</h2>
+  </div>
+
+  <div class="warning-box">
+    <strong>⚠️ Important:</strong> Make sure you are <strong>logged in and can see your Dashboard</strong> before saving the shortcut. This ensures the app opens directly to your dashboard next time.
+  </div>
+
+  <!-- iOS -->
+  <div class="os-section">
+    <h4>🍎 iPhone / iPad (Safari only)</h4>
+    <div class="step">
+      <div class="step-icon">1</div>
+      <div class="step-content">
+        <h4>Open in Safari</h4>
+        <p>Make sure you're using <strong>Safari</strong> — this won't work in Chrome on iPhone.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-icon">2</div>
+      <div class="step-content">
+        <h4>Tap the Share button</h4>
+        <p>Tap the <strong>Share icon</strong> at the bottom of the screen — it looks like a box with an arrow pointing up <strong>⬆</strong></p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-icon">3</div>
+      <div class="step-content">
+        <h4>Tap "Add to Home Screen"</h4>
+        <p>Scroll down in the share menu and tap <strong>"Add to Home Screen"</strong>.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-icon">4</div>
+      <div class="step-content">
+        <h4>Confirm the name and tap "Add"</h4>
+        <p>The name will show as <strong>Stock Alerts Pro</strong>. Tap <strong>Add</strong> in the top right corner.</p>
+      </div>
+    </div>
+    <div class="tip-box">
+      <strong>💡 Result:</strong> The bell icon will appear on your iPhone home screen. Tapping it opens the app in full-screen mode — just like a native app with no browser address bar!
+    </div>
+  </div>
+
+  <!-- Android -->
+  <div class="os-section">
+    <h4>🤖 Android (Chrome)</h4>
+    <div class="step">
+      <div class="step-icon">1</div>
+      <div class="step-content">
+        <h4>Open in Chrome</h4>
+        <p>Make sure you're using <strong>Google Chrome</strong> browser.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-icon">2</div>
+      <div class="step-content">
+        <h4>Tap the three-dot menu</h4>
+        <p>Tap the <strong>⋮</strong> menu icon in the top right corner of Chrome.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-icon">3</div>
+      <div class="step-content">
+        <h4>Tap "Add to Home screen"</h4>
+        <p>Tap <strong>"Add to Home screen"</strong> from the menu.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-icon">4</div>
+      <div class="step-content">
+        <h4>Tap "Add"</h4>
+        <p>A prompt will appear — tap <strong>Add</strong> to confirm. The icon will appear on your home screen.</p>
+      </div>
+    </div>
+    <div class="tip-box">
+      <strong>💡 Note:</strong> On some Android devices, Chrome may show an automatic <strong>"Add to Home screen"</strong> banner at the bottom of the screen — just tap that!
+    </div>
+  </div>
+</div>
+
+<!-- STEP 6: Desktop -->
+<div class="section">
+  <div class="section-header">
+    <div class="step-number">6</div>
+    <h2 class="section-title">Save Shortcut to Desktop (Computer)</h2>
+  </div>
+
+  <div class="os-section">
+    <h4>🖥️ Windows — Chrome or Edge</h4>
+    <div class="step">
+      <div class="step-icon">1</div>
+      <div class="step-content">
+        <h4>Open the app in Chrome or Edge</h4>
+        <p>Visit the app URL while logged in to your dashboard.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-icon">2</div>
+      <div class="step-content">
+        <h4>Click the install icon in the address bar</h4>
+        <p>Look for a <strong>⊕</strong> or computer icon on the right side of the address bar. Click it and select <strong>"Install"</strong>.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-icon">3</div>
+      <div class="step-content">
+        <h4>Alternatively: use the browser menu</h4>
+        <p>Click the <strong>⋮</strong> menu → <strong>"Save and share"</strong> → <strong>"Install page as app"</strong> (Chrome) or <strong>"Apps"</strong> → <strong>"Install this site as an app"</strong> (Edge).</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="os-section">
+    <h4>🍎 Mac — Safari</h4>
+    <div class="step">
+      <div class="step-icon">1</div>
+      <div class="step-content">
+        <h4>Open in Safari and go to dashboard</h4>
+        <p>Make sure you're logged in.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-icon">2</div>
+      <div class="step-content">
+        <h4>Click File → Add to Dock</h4>
+        <p>In the menu bar click <strong>File</strong> → <strong>"Add to Dock"</strong> (macOS Sonoma and later).</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-icon">3</div>
+      <div class="step-content">
+        <h4>Or drag the URL to your desktop</h4>
+        <p>Click and drag the <strong>padlock icon</strong> in the address bar to your desktop to create a shortcut.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- WHAT NEXT -->
+<div style="background:linear-gradient(135deg,var(--navy),#0d2137);border-radius:14px;border:1px solid rgba(0,198,255,0.2);padding:28px;margin-bottom:40px;color:white;">
+  <h2 style="font-family:'Syne',sans-serif;font-size:20px;margin-bottom:16px;">🎉 You're all set!</h2>
+  <p style="color:rgba(255,255,255,0.7);font-size:14px;line-height:1.7;margin-bottom:16px;">
+    Stock Alerts Pro will now monitor your stocks during market hours and send you a Telegram message the moment a price target is hit. The app checks prices every few minutes automatically.
+  </p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:14px;border:1px solid rgba(255,255,255,0.08);">
+      <div style="font-size:20px;margin-bottom:6px;">📊</div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:4px;">US Markets</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.5);">NYSE &amp; NASDAQ<br>Mon–Fri 9:30am–4pm ET</div>
+    </div>
+    <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:14px;border:1px solid rgba(255,255,255,0.08);">
+      <div style="font-size:20px;margin-bottom:6px;">🦘</div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:4px;">ASX Markets</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.5);">Australian Securities<br>Mon–Fri 10am–4pm AEST</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end container -->
+
+<div class="guide-footer">
+  <p>Made with ❤️ by <strong>Natts Digital</strong> &nbsp;·&nbsp; Stock Alerts Pro</p>
+  <p style="margin-top:6px;">⚠️ This app provides price notifications only and is NOT financial advice.</p>
+</div>
+
+<script>
+// Embed icon as base64 — replace ICON_PLACEHOLDER
+</script>
+</body>
+</html>
