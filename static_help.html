@@ -272,13 +272,32 @@
     <h2 class="section-title">Open the App</h2>
   </div>
 
-  <div class="url-box">
-    <div class="url-icon">🌐</div>
-    <div>
-      <div class="url-text">https://stock-alerts-flask.onrender.com</div>
-      <div class="url-sub">Open this URL in your browser — works on phone and desktop</div>
+  <div class="url-box" style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+    <div style="display:flex;align-items:center;gap:14px;flex:1;min-width:0;">
+      <div class="url-icon">🌐</div>
+      <div style="min-width:0;">
+        <div class="url-text" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">https://stock-alerts-flask.onrender.com</div>
+        <div class="url-sub">Open this URL in your browser — works on phone and desktop</div>
+      </div>
     </div>
+    <button onclick="copyAppURL(this)" style="flex-shrink:0;background:rgba(0,198,255,0.15);border:1px solid rgba(0,198,255,0.4);color:#00c6ff;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;transition:all 0.2s;white-space:nowrap;" onmouseover="this.style.background='rgba(0,198,255,0.25)'" onmouseout="this.style.background='rgba(0,198,255,0.15)'">📋 Copy</button>
   </div>
+  <script>
+  function copyAppURL(btn) {
+    navigator.clipboard.writeText('https://stock-alerts-flask.onrender.com').then(function() {
+      btn.textContent = '✅ Copied!';
+      btn.style.background = 'rgba(0,255,100,0.15)';
+      btn.style.borderColor = 'rgba(0,255,100,0.4)';
+      btn.style.color = '#00ff64';
+      setTimeout(function() {
+        btn.textContent = '📋 Copy';
+        btn.style.background = 'rgba(0,198,255,0.15)';
+        btn.style.borderColor = 'rgba(0,198,255,0.4)';
+        btn.style.color = '#00c6ff';
+      }, 2000);
+    });
+  }
+  </script>
 
   <div class="tip-box">
     <strong>💡 Tip:</strong> Use <strong>Safari on iPhone</strong> or <strong>Chrome on Android</strong> for the best experience and to enable the home screen shortcut later.
@@ -402,8 +421,8 @@
     <div class="step">
       <div class="step-icon">2</div>
       <div class="step-content">
-        <h4>Search for @userinfobot</h4>
-        <p>In the Telegram search bar, type <strong>@userinfobot</strong> and open the bot.</p>
+        <h4>Search for @userinfo3bot</h4>
+        <p>In the Telegram search bar, type <strong>@userinfo3bot</strong> and open the bot.</p>
       </div>
     </div>
     <div class="step">
@@ -427,7 +446,7 @@
           <div class="mock-tg-header">
             <div class="mock-tg-avatar">🤖</div>
             <div>
-              <div class="mock-tg-name">@userinfobot</div>
+              <div class="mock-tg-name">@userinfo3bot</div>
               <div class="mock-tg-sub">bot</div>
             </div>
           </div>
@@ -457,7 +476,7 @@
       <div class="step-icon">1</div>
       <div class="step-content">
         <h4>Start the Stock Alerts Bot on Telegram</h4>
-        <p>Open Telegram, search for <strong>@SanStockAlert_bot</strong> and tap <strong>START</strong>. <em>This step is required — the bot cannot send you messages until you start it.</em></p>
+        <p>Open Telegram, search for <strong>@SPA2026bot</strong> and tap <strong>START</strong>. <em>This step is required — the bot cannot send you messages until you start it.</em></p>
       </div>
     </div>
     <div class="step">
@@ -490,7 +509,7 @@
     </div>
 
     <div class="warning-box">
-      <strong>⚠️ Important:</strong> You must search for <strong>@SanStockAlert_bot</strong> on Telegram and tap <strong>START</strong> before the bot can send you any messages. If you skip this step, notifications will silently fail.
+      <strong>⚠️ Important:</strong> You must search for <strong>@SPA2026bot</strong> on Telegram and tap <strong>START</strong> before the bot can send you any messages. If you skip this step, notifications will silently fail.
     </div>
 
     <div class="mockup-row">
