@@ -1505,6 +1505,17 @@ def admin_run_checks():
         return f'<h2>Error: {str(e)}</h2><p><a href="/admin">Back to Admin</a></p>'
 
 
+@app.route('/ping')
+def ping():
+    """Public health check endpoint - used by UptimeRobot to keep server alive AND trigger alert checks"""
+    try:
+        check_alerts_job()
+        return 'OK', 200
+    except Exception as e:
+        print(f"Ping check error: {str(e)}")
+        return 'OK', 200  # Always return 200 so UptimeRobot stays happy
+
+
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 8502))
