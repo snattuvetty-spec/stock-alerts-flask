@@ -154,7 +154,7 @@ Hi {user['name']},
 
 {alert['symbol']} crossed your target!
 
-💰 Current Price: ${price:.2f}
+💰 Current Price: ${price:.3f}
 🎯 Your Target: ${alert['target']:.2f} {direction}
 
 Manage alerts: https://stock-alerts-flask.onrender.com
@@ -553,7 +553,7 @@ def dashboard():
                 status = 'triggered'
         alert_list.append({
             **a,
-            'price': f"${price:.2f}" if price else "—",
+            'price': f"${price:.3f}" if price else "—",
             'change_pct': f"{change_pct:+.2f}%" if change_pct else "",
             'change_up': change_pct >= 0 if change_pct else True,
             'status': status,
