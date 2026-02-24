@@ -62,7 +62,7 @@ def get_cached_price(symbol):
         print(f"Fetched fresh price for {symbol}: ${price}")
     return price
 
-def check_alerts_job():
+def check_alerts_job(force=False):
     """Background job to check all alerts with batching and caching"""
     try:
         # Check if major markets are open (US or Australia)
@@ -73,6 +73,8 @@ def check_alerts_job():
         now_ny = now_utc.astimezone(pytz.timezone('America/New_York'))
         now_sydney = now_utc.astimezone(pytz.timezone('Australia/Sydney'))
         
+        print(f"=== Alert check started (force={force}) NY:{now_ny.strftime('%H:%M %a')} Sydney:{now_sydney.strftime('%H:%M %a')} ===")
+        
         # US market hours: 9:30 AM - 4:00 PM ET, Mon-Fri
         us_open = (now_ny.weekday() < 5 and 
                    9 <= now_ny.hour < 16 and 
@@ -82,7 +84,7 @@ def check_alerts_job():
         asx_open = (now_sydney.weekday() < 5 and 
                     10 <= now_sydney.hour < 16)
         
-        if not us_open and not asx_open:
+        if not us_open and not asx_open and not force:
             print(f"Markets closed - skipping check (NY: {now_ny.strftime('%H:%M %a')}, Sydney: {now_sydney.strftime('%H:%M %a')})")
             return
         
@@ -114,7 +116,9 @@ def check_alerts_job():
                 elif alert['type'] == 'below' and price <= alert['target']:
                     triggered = True
                 
+                print(f"  {alert['symbol']}: price=${price:.3f} target=${alert['target']:.3f} type={alert['type']} triggered={triggered}")
                 if triggered:
+                    print(f"  >>> TRIGGERED: {alert['symbol']} for user {alert['username']}")
                     # Get user settings
                     username = alert['username']
                     settings_result = supabase.table('user_settings').select('*').eq('username', username).execute()
@@ -139,6 +143,7 @@ def check_alerts_job():
                                 pass
                     
                     # Send Telegram notification
+                    notification_sent = False
                     if settings.get('telegram_enabled'):
                         chat_id = settings.get('telegram_chat_id') or os.getenv('TELEGRAM_CHAT_ID')
                         if chat_id:
@@ -155,10 +160,20 @@ Hi {user['name']},
 Manage alerts: https://stock-alerts-flask.onrender.com
 
 Natts Digital"""
-                            send_telegram(msg, chat_id)
-                    
-                    # Disable alert after triggering (prevents spam)
-                    supabase.table('alerts').update({'enabled': False}).eq('id', alert['id']).execute()
+                            notification_sent = send_telegram(msg, chat_id)
+                            if not notification_sent:
+                                print(f"Telegram failed for {username} on {alert['symbol']} - alert NOT disabled, will retry next cycle")
+                        else:
+                            print(f"No chat_id for {username} - skipping notification, disabling alert")
+                            notification_sent = True  # No telegram configured, disable anyway
+                    else:
+                        print(f"Telegram not enabled for {username} - disabling alert without notification")
+                        notification_sent = True  # Not configured, disable anyway
+
+                    # Only disable alert after confirmed delivery (prevents silent failures)
+                    if notification_sent:
+                        supabase.table('alerts').update({'enabled': False}).eq('id', alert['id']).execute()
+                        print(f"Alert disabled for {username} - {alert['symbol']} triggered at ${price:.2f}")
                 
     except Exception as e:
         print(f"Alert checker error: {str(e)}")
@@ -168,11 +183,19 @@ def send_telegram(message, chat_id):
     try:
         bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
         if not bot_token:
+            print("Telegram error: TELEGRAM_BOT_TOKEN not set in environment variables")
             return False
         url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-        requests.post(url, json={'chat_id': chat_id, 'text': message})
-        return True
-    except:
+        resp = requests.post(url, json={'chat_id': chat_id, 'text': message}, timeout=10)
+        result = resp.json()
+        if result.get('ok'):
+            print(f"Telegram sent OK to chat_id {chat_id}")
+            return True
+        else:
+            print(f"Telegram API error: {result.get('description', 'Unknown error')} (chat_id: {chat_id})")
+            return False
+    except Exception as e:
+        print(f"Telegram exception: {str(e)}")
         return False
 
 # Start background scheduler
@@ -1193,9 +1216,9 @@ def settings():
                 if chat_id:
                     sent = send_telegram(f"🧪 Test Alert\n\nHi {user['name']}!\n\nThis is a test from Stock Alerts Pro.\n\nIf you received this, your Telegram alerts are working perfectly! ✅", chat_id)
                     if sent:
-                        success = f"✅ Test notification sent to Telegram Chat ID {chat_id}"
+                        success = f"✅ Test notification sent! Check your Telegram now."
                     else:
-                        error = "❌ Telegram failed - check your TELEGRAM_BOT_TOKEN in Render environment variables"
+                        error = "❌ Telegram delivery failed. Check Render logs for details. Common causes: wrong Chat ID, or bot hasn't been started (send /start to your bot first)."
                 else:
                     error = "❌ No Telegram Chat ID saved. Enter your Chat ID, save settings, then test."
             else:
@@ -1463,6 +1486,24 @@ def admin_export():
 def help_page():
     import os
     return send_from_directory(os.path.dirname(os.path.abspath(__file__)), 'static_help.html')
+
+
+@app.route('/admin/run-checks')
+@login_required
+def admin_run_checks():
+    """Admin only - manually trigger alert check, bypassing market hours"""
+    if session.get('username') != 'admin':
+        return redirect(url_for('dashboard'))
+    try:
+        check_alerts_job(force=True)
+        return (
+            '<h2>Alert check complete</h2>'
+            '<p>Check your Render logs to see what happened for each alert.</p>'
+            '<p><a href="/admin">Back to Admin</a></p>'
+        )
+    except Exception as e:
+        return f'<h2>Error: {str(e)}</h2><p><a href="/admin">Back to Admin</a></p>'
+
 
 
 if __name__ == '__main__':
