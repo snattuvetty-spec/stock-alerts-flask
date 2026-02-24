@@ -1184,19 +1184,22 @@ def settings():
         elif action == 'test_notification':
             user = supabase.table('users').select('*').eq('username', username).execute().data[0]
             
-            # Test Telegram only
-            if user_settings.get('telegram_enabled'):
-                chat_id = user_settings.get('telegram_chat_id') or os.getenv('TELEGRAM_CHAT_ID')
+            # Re-fetch fresh settings from DB (in case user just saved before testing)
+            fresh = supabase.table('user_settings').select('*').eq('username', username).execute().data
+            fresh_settings = fresh[0] if fresh else {}
+
+            if fresh_settings.get('telegram_enabled'):
+                chat_id = fresh_settings.get('telegram_chat_id') or os.getenv('TELEGRAM_CHAT_ID')
                 if chat_id:
                     sent = send_telegram(f"🧪 Test Alert\n\nHi {user['name']}!\n\nThis is a test from Stock Alerts Pro.\n\nIf you received this, your Telegram alerts are working perfectly! ✅", chat_id)
                     if sent:
                         success = f"✅ Test notification sent to Telegram Chat ID {chat_id}"
                     else:
-                        error = "❌ Telegram failed - check TELEGRAM_BOT_TOKEN on Render"
+                        error = "❌ Telegram failed - check your TELEGRAM_BOT_TOKEN in Render environment variables"
                 else:
-                    error = "❌ No Telegram Chat ID configured. Enter it above and save first."
+                    error = "❌ No Telegram Chat ID saved. Enter your Chat ID, save settings, then test."
             else:
-                error = "❌ Enable Telegram notifications first (check the box and save)"
+                error = "❌ Telegram not enabled. Tick the checkbox, save settings, then test."
 
         elif action == 'change_password':
             curr = request.form.get('current_password')
