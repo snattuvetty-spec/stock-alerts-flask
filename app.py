@@ -557,7 +557,7 @@ def dashboard():
             'change_pct': f"{change_pct:+.2f}%" if change_pct else "",
             'change_up': change_pct >= 0 if change_pct else True,
             'status': status,
-            'news_url': f"https://finance.yahoo.com/quote/{a['symbol']}/news",
+            'news_url': f"https://finance.yahoo.com/quote/{a['symbol']}/news/?p={a['symbol']}",
             'chart_url': f"https://finance.yahoo.com/quote/{a['symbol']}/chart",
             'sparkline': sparkline_data
         })
