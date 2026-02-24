@@ -159,7 +159,7 @@
                         data-value="{{ a.target }}"
                         title="Double-click to edit"
                         style="cursor:pointer;">
-                        ${{ "%.2f"|format(a.target) }}
+                        ${{ "%.3f"|format(a.target) }}
                     </td>
                     <td class="editable" 
                         data-alert-id="{{ a.id }}" 
@@ -317,7 +317,7 @@
                             body: JSON.stringify({target: newValue})
                         });
                         if (response.ok) {
-                            this.innerHTML = '$' + newValue.toFixed(2);
+                            this.innerHTML = '$' + newValue.toFixed(3);
                             this.dataset.value = newValue;
                         } else {
                             alert('Update failed!');
