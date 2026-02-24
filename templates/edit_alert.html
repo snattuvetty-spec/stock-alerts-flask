@@ -13,8 +13,8 @@
         </div>
         <div class="form-group">
             <label>Target Price ($)</label>
-            <input type="number" name="target" step="0.01" min="0.01"
-                   value="{{ alert.target }}" required>
+            <input type="number" name="target" step="any" min="0.001"
+                   value="{{ alert.target }}" placeholder="0.000" required>
         </div>
         <div class="form-group">
             <label>Alert When Price Goes</label>
