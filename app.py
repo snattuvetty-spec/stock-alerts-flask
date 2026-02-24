@@ -596,26 +596,48 @@ def dashboard():
     if is_premium:
         try:
             user_data = supabase.table('users').select(
-                'stripe_subscription_id, subscription_plan'
+                'stripe_subscription_id, subscription_plan, trial_ends'
             ).eq('username', username).execute().data
             if user_data:
                 subscription_plan = user_data[0].get('subscription_plan', 'monthly')
                 sub_id = user_data[0].get('stripe_subscription_id')
-                if sub_id:
-                    sub = stripe.Subscription.retrieve(sub_id)
-                    # Try both dict and attribute access
-                    renewal_ts = sub.get('current_period_end') if isinstance(sub, dict) else getattr(sub, 'current_period_end', None)
-                    if renewal_ts:
-                        renewal_dt = datetime.fromtimestamp(int(renewal_ts))
-                        renewal_date = renewal_dt.strftime('%d %b %Y')
-                        days_to_renewal = max(0, (renewal_dt - datetime.now()).days)
-                        print(f"Renewal date for {username}: {renewal_date} ({days_to_renewal} days)")
-                    else:
-                        print(f"No current_period_end for {username}, sub keys: {list(sub.keys()) if isinstance(sub, dict) else 'stripe object'}")
-                else:
-                    # Admin or manually set premium - no Stripe sub
+                db_trial_ends = user_data[0].get('trial_ends', '')
+
+                # Permanently set via SQL (2099)
+                if db_trial_ends and db_trial_ends[:10] == '2099-01-01':
                     renewal_date = 'Permanent'
                     days_to_renewal = None
+                    print(f"{username} is permanent (SQL-upgraded)")
+
+                elif sub_id:
+                    # Has Stripe subscription - get next billing date
+                    try:
+                        sub = stripe.Subscription.retrieve(sub_id)
+                        # Try current_period_end first, fall back to trial_end (Stripe test mode)
+                        renewal_ts = (sub.get('current_period_end') or sub.get('trial_end')) if isinstance(sub, dict) else (getattr(sub, 'current_period_end', None) or getattr(sub, 'trial_end', None))
+                        if renewal_ts:
+                            renewal_dt = datetime.fromtimestamp(int(renewal_ts))
+                            renewal_date = renewal_dt.strftime('%d %b %Y')
+                            days_to_renewal = max(0, (renewal_dt - datetime.now()).days)
+                            print(f"Renewal date for {username}: {renewal_date} ({days_to_renewal} days)")
+                        else:
+                            renewal_date = 'Active'
+                    except Exception as se:
+                        print(f"Stripe fetch error for {username}: {str(se)}")
+                        renewal_date = 'Active'
+
+                elif db_trial_ends:
+                    # Premium but no Stripe sub - show trial_ends date
+                    try:
+                        te = datetime.fromisoformat(db_trial_ends.replace('Z', ''))
+                        renewal_date = te.strftime('%d %b %Y')
+                        days_to_renewal = max(0, (te - datetime.now()).days)
+                    except:
+                        renewal_date = 'Active'
+                else:
+                    renewal_date = 'Permanent'
+                    days_to_renewal = None
+
         except Exception as e:
             print(f"Renewal fetch error for {username}: {str(e)}")
 
@@ -1418,7 +1440,7 @@ def admin_export():
                     try:
                         sub_id = u.get('stripe_subscription_id')
                         sub = stripe.Subscription.retrieve(sub_id)
-                        renewal_ts = sub.get('current_period_end')
+                        renewal_ts = sub.get('current_period_end') or sub.get('trial_end')
                         if renewal_ts:
                             renewal_dt = datetime.fromtimestamp(renewal_ts)
                             expiry_label = f"Renewal: {renewal_dt.strftime('%d %b %Y')}"
