@@ -22,8 +22,8 @@ app.secret_key = os.getenv('SECRET_KEY', 'natts-digital-secret-2026')
 # Stripe configuration
 stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY')
-STRIPE_PRICE_MONTHLY = os.getenv('STRIPE_PRICE_MONTHLY', 'price_1T2isyEX5QghswoUgNNcfJCN')
-STRIPE_PRICE_ANNUAL = os.getenv('STRIPE_PRICE_ANNUAL', 'price_1T2iusEX5QghswoUFfYVYedR')
+STRIPE_PRICE_MONTHLY = os.getenv('STRIPE_PRICE_MONTHLY', 'price_1T4WeXEX5QghswoURo0NoPGM')
+STRIPE_PRICE_ANNUAL = os.getenv('STRIPE_PRICE_ANNUAL', 'price_1T4WfwEX5QghswoU0GT2UoSK')
 STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')
 
 # ============================================================
