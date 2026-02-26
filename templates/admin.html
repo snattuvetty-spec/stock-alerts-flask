@@ -78,6 +78,8 @@
         <thead><tr style="background:#f8fafc;">
           <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Username</th>
           <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Plan</th>
+          <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Last Login</th>
+          <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Last Logout</th>
         </tr></thead>
         <tbody>
           {% for u in premium_users %}
@@ -88,6 +90,8 @@
                 {{ u.get('subscription_plan', 'monthly')|title }}
               </span>
             </td>
+            <td style="padding:8px;color:#6b7280;font-size:12px;">{{ u.get('last_login', '')[:16]|replace('T',' ') if u.get('last_login') else '—' }}</td>
+            <td style="padding:8px;color:#6b7280;font-size:12px;">{{ u.get('last_logout', '')[:16]|replace('T',' ') if u.get('last_logout') else '—' }}</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -107,12 +111,16 @@
         <thead><tr style="background:#f8fafc;">
           <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Username</th>
           <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Email</th>
+          <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Last Login</th>
+          <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Last Logout</th>
         </tr></thead>
         <tbody>
           {% for u in expired_users %}
           <tr style="border-top:1px solid #e5e7eb;">
             <td style="padding:8px;">{{ u.username }}</td>
             <td style="padding:8px;color:#6b7280;">{{ u.email }}</td>
+            <td style="padding:8px;color:#6b7280;font-size:12px;">{{ u.get('last_login', '')[:16]|replace('T',' ') if u.get('last_login') else '—' }}</td>
+            <td style="padding:8px;color:#6b7280;font-size:12px;">{{ u.get('last_logout', '')[:16]|replace('T',' ') if u.get('last_logout') else '—' }}</td>
           </tr>
           {% endfor %}
         </tbody>

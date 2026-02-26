@@ -343,7 +343,10 @@ def login():
                     if verify_password(password, user['password_hash']):
                         # Generate unique session token for single-session enforcement
                         token = ''.join(random.choices(string.ascii_letters + string.digits, k=32))
-                        supabase.table('users').update({'session_token': token}).eq('username', user['username']).execute()
+                        supabase.table('users').update({
+                            'session_token': token,
+                            'last_login': datetime.now().isoformat()
+                        }).eq('username', user['username']).execute()
                         session['username'] = user['username']
                         session['name'] = user['name']
                         session['premium'] = user.get('premium', False)
@@ -525,7 +528,10 @@ def logout():
     # Clear session token from DB on logout
     if 'username' in session:
         try:
-            supabase.table('users').update({'session_token': None}).eq('username', session['username']).execute()
+            supabase.table('users').update({
+                'session_token': None,
+                'last_logout': datetime.now().isoformat()
+            }).eq('username', session['username']).execute()
         except:
             pass
     session.clear()
