@@ -279,8 +279,18 @@
                 flex-direction: column;
                 align-items: center;
                 justify-content: center;
-                padding: 10px 0 12px;
-                gap: 4px;
+                padding: 6px 0 max(10px, env(safe-area-inset-bottom));
+                gap: 2px;
+                overflow: hidden;
+                max-height: 110px;
+            }
+            /* Scale down SVG on small phones */
+            .natts-panel svg {
+                max-width: 160px;
+                height: auto;
+            }
+            .natts-panel .apps-by-label {
+                font-size: 8px;
             }
             footer { display: none; }
         }
@@ -343,7 +353,7 @@
     </div>
 
     <div class="natts-panel">
-        <div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.2);font-family:'DM Sans',sans-serif;">Apps by</div>
+        <div class="apps-by-label" style="letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.2);font-family:'DM Sans',sans-serif;">Apps by</div>
         <div style="display:flex;justify-content:center;">
             <svg id="logo" width="200" height="74" viewBox="10 0 290 140" xmlns="http://www.w3.org/2000/svg">
       <defs>
