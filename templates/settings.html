@@ -21,14 +21,14 @@
                 <form method="POST" action="/create-checkout-session" style="margin:0;">
                     <input type="hidden" name="plan" value="monthly">
                     <button type="submit" style="width:100%;background:white;color:#667eea;border:none;padding:12px;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px;">
-                        💳 Monthly - $4.99/month
+                        💳 Monthly - $3.99/month AUD
                     </button>
                 </form>
                 
                 <form method="POST" action="/create-checkout-session" style="margin:0;">
                     <input type="hidden" name="plan" value="annual">
                     <button type="submit" style="width:100%;background:rgba(255,255,255,0.2);color:white;border:2px solid white;padding:12px;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px;">
-                        🎁 Annual - $49/year <span style="background:#27ae60;padding:2px 8px;border-radius:4px;font-size:11px;margin-left:8px;">Save 17%</span>
+                        🎁 Annual - $39.99/year AUD <span style="background:#27ae60;padding:2px 8px;border-radius:4px;font-size:11px;margin-left:8px;">Save 2 months</span>
                     </button>
                 </form>
             </div>
@@ -59,14 +59,14 @@
                 <form method="POST" action="/create-checkout-session" style="margin:0;">
                     <input type="hidden" name="plan" value="monthly">
                     <button type="submit" style="width:100%;background:#667eea;color:white;border:none;padding:12px;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px;">
-                        💳 Resubscribe - Monthly $4.99/month
+                        💳 Resubscribe - Monthly $3.99/month AUD
                     </button>
                 </form>
                 
                 <form method="POST" action="/create-checkout-session" style="margin:0;">
                     <input type="hidden" name="plan" value="annual">
                     <button type="submit" style="width:100%;background:#27ae60;color:white;border:none;padding:12px;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px;">
-                        🎁 Resubscribe - Annual $49/year (Save 17%)
+                        🎁 Resubscribe - Annual $39.99/year AUD (Save 2 months)
                     </button>
                 </form>
             </div>
@@ -85,14 +85,14 @@
             <!-- Plan Switching -->
             {% if settings.get('subscription_plan') == 'monthly' %}
             <div style="background:#e8f5e9;padding:12px;border-radius:6px;margin-bottom:16px;">
-                <p style="color:#2e7d32;font-weight:600;font-size:14px;margin-bottom:8px;">💡 Save 17% with Annual Plan</p>
+                <p style="color:#2e7d32;font-weight:600;font-size:14px;margin-bottom:8px;">💡 Save 2 months with Annual Plan</p>
                 <p style="color:#4caf50;font-size:13px;margin-bottom:12px;">
-                    Switch to annual billing and save $10.88/year! You'll be credited for your remaining monthly time.
+                    Switch to annual billing and save $7.89/year! You'll be credited for your remaining monthly time.
                 </p>
                 <form method="POST" action="/switch-plan" style="margin:0;">
                     <input type="hidden" name="new_plan" value="annual">
                     <button type="submit" class="btn btn-primary" style="background:#27ae60;border-color:#27ae60;">
-                        Switch to Annual - $49/year
+                        Switch to Annual - $39.99/year AUD
                     </button>
                 </form>
             </div>
