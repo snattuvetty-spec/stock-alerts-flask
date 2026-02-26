@@ -27,7 +27,7 @@
             align-items: center;
             justify-content: center;
             background: #020b18;
-            overflow: hidden;
+            overflow-x: hidden;
             position: relative;
         }
 
@@ -215,7 +215,7 @@
             line-height: 1.6;
         }
 
-        footer {
+        footer { display: none;
             text-align: center;
             font-size: 12px;
             color: rgba(255,255,255,0.25);
@@ -275,7 +275,7 @@
             .natts-panel {
                 flex-shrink: 0;
                 background: linear-gradient(180deg, #061220 0%, #020b18 100%);
-                display: flex;
+                display: flex !important;
                 flex-direction: column;
                 align-items: center;
                 justify-content: center;
@@ -285,9 +285,17 @@
             footer { display: none; }
         }
 
-        /* Desktop — hide natts-panel, show footer */
+        /* Desktop — show natts-panel inline below card */
         @media (min-width: 481px) {
-            .natts-panel { display: none; }
+            .natts-panel {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 4px;
+                padding: 16px 0 8px;
+                position: relative;
+                z-index: 1;
+            }
         }
     </style>
 </head>
