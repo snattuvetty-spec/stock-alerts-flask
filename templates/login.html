@@ -269,28 +269,31 @@
             }
         }
 
-.natts-footer {
-    text-align: center;
-    margin-top: 16px;
-    padding: 12px 0 4px;
-    position: relative;
-    z-index: 1;
-}
-.natts-footer .powered {
-    font-size: 9px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: rgba(255,255,255,0.2);
-    margin-bottom: 6px;
-}
-.natts-footer img {
-    height: 32px;
-    width: auto;
-    opacity: 0.75;
-    filter: brightness(1.1);
-    transition: opacity 0.3s;
-}
-.natts-footer img:hover { opacity: 1; }
+        /* Natts Digital animated footer */
+        .natts-footer {
+            text-align: center;
+            padding: 20px 0 8px;
+            position: relative;
+            z-index: 1;
+        }
+        .natts-footer .powered-label {
+            font-size: 9px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.2);
+            margin-bottom: 10px;
+            font-family: 'DM Sans', sans-serif;
+        }
+        .natts-logo-wrap {
+            background: #0a0f19;
+            border-radius: 10px;
+            padding: 14px 24px;
+            display: inline-block;
+        }
+        .natts-logo-wrap svg {
+            display: block;
+            overflow: visible;
+        }
     </style>
 </head>
 <body>
@@ -356,8 +359,252 @@ document.querySelector('form').addEventListener('submit', function() {
 });
 </script>
 <div class="natts-footer">
-    <div class="powered">Powered by</div>
-    <img src="data:image/gif;base64,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" alt="Natts Digital">
+    <div class="powered-label">Powered by</div>
+    <div class="natts-logo-wrap">
+        <svg id="logo" width="380" height="140" viewBox="0 0 380 140" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Glow filter for the ball -->
+    <filter id="glow" x="-200%" y="-200%" width="500%" height="500%">
+      <feGaussianBlur stdDeviation="5" result="blur1"/>
+      <feGaussianBlur stdDeviation="10" result="blur2"/>
+      <feGaussianBlur stdDeviation="18" result="blur3"/>
+      <feMerge>
+        <feMergeNode in="blur3"/>
+        <feMergeNode in="blur2"/>
+        <feMergeNode in="blur1"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Soft glow for the pulse line itself -->
+    <filter id="lineGlow" x="-50%" y="-300%" width="200%" height="700%">
+      <feGaussianBlur stdDeviation="2.5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Trail gradient (redrawn via JS) -->
+    <radialGradient id="aura" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"   stop-color="#38aed4" stop-opacity="0.9"/>
+      <stop offset="40%"  stop-color="#38aed4" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#38aed4" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- ═══ N Lettermark — single clean polygon ═══ -->
+  <!--  Left bar | diagonal | right bar, all in one shape  -->
+  <polygon points="18,12 25,12 47,38 47,12 54,12 54,62 47,62 25,36 25,62 18,62" fill="#e4edf8"/>
+
+  <!-- ═══ D Lettermark ═══ -->
+  <!--
+    Same bounding box as N: x=18-54 (36px), y=76-126 (50px tall in SVG = 73px PNG scaled)
+    PNG analysis:
+      - Full width at mid = 51px (maps to SVG 36px wide → x=18 to x=54)
+      - Left bar ~7px wide (x=18-25)
+      - Outer curve: generous D, reaches full width at y-center
+      - Inner cutout starts at x≈22px from origin (SVG x≈31), right edge tracks outer curve - 8px
+    Bezier control points derived from pixel profile
+  -->
+  <!-- Outer D shape -->
+  <path d="
+    M18,76
+    L36,76
+    C50,76 54,82 54,101
+    C54,120 50,126 36,126
+    L18,126
+    Z
+  " fill="#e4edf8"/>
+  <!-- Inner cutout — creates the hollow -->
+  <path d="
+    M25,83
+    L34,83
+    C44,83 46,89 46,101
+    C46,113 44,119 34,119
+    L25,119
+    Z
+  " fill="#0a0f19"/>
+
+  <!-- ═══ Vertical divider ═══ -->
+  <rect x="68" y="8" width="1.5" height="124" fill="#38aed4" opacity="0.7"/>
+
+  <!-- ═══ NATTS text ═══ -->
+  <text id="nattsText" x="82" y="52"
+    font-family="'Arial Black', 'Arial Bold', sans-serif"
+    font-weight="900"
+    font-size="34"
+    letter-spacing="2"
+    fill="#e4edf8">NATTS</text>
+
+  <!-- ═══ DIGITAL — spaced dynamically via JS to match NATTS width exactly ═══ -->
+  <g id="digitalGroup" font-family="'Arial', 'Helvetica Neue', sans-serif" font-size="22" fill="#38aed4" font-weight="400" letter-spacing="0">
+    <text id="d0" y="122">D</text>
+    <text id="d1" y="122">I</text>
+    <text id="d2" y="122">G</text>
+    <text id="d3" y="122">I</text>
+    <text id="d4" y="122">T</text>
+    <text id="d5" y="122">A</text>
+    <text id="d6" y="122">L</text>
+  </g>
+
+  <!-- ═══ Pulse wave path — end x set by JS to match NATTS right edge ═══ -->
+  <path id="pulsePath"
+    d="M82,87 L82,87"
+    fill="none"
+    stroke="#38aed4"
+    stroke-width="1.8"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    filter="url(#lineGlow)"
+    opacity="0.85"/>
+
+  <!-- ═══ Aura ═══ -->
+  <circle id="auraCircle" cx="-999" cy="-999" r="28" fill="url(#aura)" opacity="0"/>
+
+  <!-- ═══ Ball — starts visible at pulse start ═══ -->
+  <circle id="ball" cx="-999" cy="-999" r="4.5"
+    fill="#ffffff"
+    filter="url(#glow)"
+    opacity="0"/>
+
+</svg>
+    </div>
 </div>
+<script>
+  // ── Measure NATTS bounding box to get exact right edge ──
+  const nattsEl = document.getElementById('nattsText');
+  const nattsBBox = nattsEl.getBBox();
+  const textStartX = nattsBBox.x;
+  const nattsRightX = nattsBBox.x + nattsBBox.width;
+
+  // ── Space DIGITAL evenly across same width as NATTS ──
+  const chars = ['d0','d1','d2','d3','d4','d5','d6'];
+  const charEls = chars.map(id => document.getElementById(id));
+
+  // Measure each character's natural width
+  const charWidths = charEls.map(el => {
+    el.setAttribute('x', 0);
+    return el.getBBox().width;
+  });
+  const totalCharWidth = charWidths.reduce((a, b) => a + b, 0);
+  const totalGap = nattsBBox.width - totalCharWidth;
+  const gap = totalGap / (chars.length - 1);
+
+  // Position each character
+  let cx = textStartX;
+  charEls.forEach((el, i) => {
+    el.setAttribute('x', cx);
+    cx += charWidths[i] + gap;
+  });
+
+  // ── Build pulse wave path ending exactly at nattsRightX ──
+  const py = 87;
+  const pulseStartX = textStartX;
+  const pulseEndX = nattsRightX;
+
+  // Place the 2-peak square wave in the centre, flat lines either side
+  const flatLeft  = 40;   // flat run before first rise
+  const seg       = 18;   // each pulse segment width
+  const ampUp     = 14;   // rise amount
+  const ampDown   = 10;   // dip amount
+
+  const p0 = pulseStartX;
+  const p1 = p0 + flatLeft;
+  const p2 = p1 + seg;   // first peak top
+  const p3 = p2 + seg;   // come down to dip
+  const p4 = p3 + seg;   // second peak top
+  const p5 = p4 + seg;   // return to baseline
+  const p6 = pulseEndX;
+
+  const d = [
+    `M${p0},${py}`,
+    `L${p1},${py}`,
+    `L${p1},${py - ampUp}`,
+    `L${p2},${py - ampUp}`,
+    `L${p2},${py + ampDown}`,
+    `L${p3},${py + ampDown}`,
+    `L${p3},${py - ampUp}`,
+    `L${p4},${py - ampUp}`,
+    `L${p4},${py}`,
+    `L${p6},${py}`
+  ].join(' ');
+
+  const pulsePath = document.getElementById('pulsePath');
+  pulsePath.setAttribute('d', d);
+
+  // ── Ball & aura references ──
+  const ball = document.getElementById('ball');
+  const auraCircle = document.getElementById('auraCircle');
+  const totalLength = pulsePath.getTotalLength();
+
+  // ── Place ball at start of pulse immediately ──
+  function placeBallAt(len) {
+    const pt = pulsePath.getPointAtLength(len);
+    ball.setAttribute('cx', pt.x);
+    ball.setAttribute('cy', pt.y);
+    ball.setAttribute('opacity', '1');
+    auraCircle.setAttribute('cx', pt.x);
+    auraCircle.setAttribute('cy', pt.y);
+    auraCircle.setAttribute('opacity', '0.7');
+  }
+
+  placeBallAt(0);
+
+  let startTime = null;
+  let direction = 1;
+  const DURATION = 3800; // slower — was 2200
+  const PAUSE = 700;
+
+  let phase = 'running';
+  let pauseStart = null;
+
+  function getPoint(progress) {
+    const len = direction === 1
+      ? progress * totalLength
+      : (1 - progress) * totalLength;
+    return pulsePath.getPointAtLength(Math.min(Math.max(len, 0), totalLength));
+  }
+
+  function easeInOut(t) {
+    return t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
+  }
+
+  function animate(ts) {
+    if (!startTime) startTime = ts;
+
+    if (phase === 'pausing') {
+      if (ts - pauseStart >= PAUSE) {
+        phase = 'running';
+        startTime = ts;
+        direction *= -1;
+      }
+      requestAnimationFrame(animate);
+      return;
+    }
+
+    const elapsed = ts - startTime;
+    const t = Math.min(elapsed / DURATION, 1);
+    const eased = easeInOut(t);
+    const pt = getPoint(eased);
+
+    ball.setAttribute('cx', pt.x);
+    ball.setAttribute('cy', pt.y);
+    ball.setAttribute('opacity', '1');
+
+    auraCircle.setAttribute('cx', pt.x);
+    auraCircle.setAttribute('cy', pt.y);
+    auraCircle.setAttribute('opacity', '0.7');
+
+    if (t >= 1) {
+      phase = 'pausing';
+      pauseStart = ts;
+    }
+
+    requestAnimationFrame(animate);
+  }
+
+  setTimeout(() => requestAnimationFrame(animate), 400);
+</script>
 </body>
 </html>
