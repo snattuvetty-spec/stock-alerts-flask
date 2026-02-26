@@ -243,21 +243,21 @@
                 display: flex;
                 flex-direction: column;
             }
-            /* TOP PANEL — logo, fixed height */
+            /* TOP PANEL — compact on mobile */
             .auth-logo {
                 flex-shrink: 0;
                 background: #020b18;
-                padding: 20px 24px 16px;
+                padding: 12px 24px 10px;
                 margin-bottom: 0;
                 border-bottom: 1px solid rgba(0,198,255,0.12);
                 text-align: center;
             }
-            .auth-logo .logo-icon { width: 64px; height: 64px; margin-bottom: 10px; }
-            .auth-logo .logo-icon img { width: 64px; height: 64px; }
-            .auth-logo h1 { font-size: 22px; }
-            .auth-logo p { font-size: 12px; margin-top: 2px; }
+            .auth-logo .logo-icon { width: 52px; height: 52px; margin-bottom: 6px; }
+            .auth-logo .logo-icon img { width: 52px; height: 52px; }
+            .auth-logo h1 { font-size: 20px; }
+            .auth-logo p { font-size: 11px; margin-top: 1px; }
 
-            /* MIDDLE PANEL — form, scrollable if needed */
+            /* MIDDLE PANEL — scrollable, compact padding */
             .auth-card {
                 flex: 1;
                 overflow-y: auto;
@@ -267,7 +267,7 @@
                 border-right: none;
                 border-top: none;
                 border-bottom: 1px solid rgba(255,255,255,0.06);
-                padding: 20px 20px 16px;
+                padding: 14px 20px 12px;
                 min-height: 0;
             }
 
@@ -279,20 +279,17 @@
                 flex-direction: column;
                 align-items: center;
                 justify-content: center;
-                padding: 6px 0 max(10px, env(safe-area-inset-bottom));
-                gap: 2px;
-                overflow: hidden;
-                max-height: 110px;
-            }
-            /* Scale down SVG on small phones */
-            .natts-panel svg {
-                max-width: 160px;
-                height: auto;
-            }
-            .natts-panel .apps-by-label {
-                font-size: 8px;
+                padding: 10px 0 12px;
+                gap: 4px;
             }
             footer { display: none; }
+            /* Compact form elements on mobile */
+            .form-group { margin-bottom: 10px !important; }
+            .form-group label { font-size: 11px; margin-bottom: 4px; }
+            .form-group input { padding: 10px 14px !important; font-size: 14px !important; }
+            .disclaimer { padding: 10px 12px !important; font-size: 11px !important; margin-top: 10px !important; }
+            .btn { padding: 12px !important; font-size: 14px !important; }
+            .tabs { margin-bottom: 14px !important; }
         }
 
         /* Desktop — natts-panel shows below card naturally */
@@ -353,7 +350,7 @@
     </div>
 
     <div class="natts-panel">
-        <div class="apps-by-label" style="letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.2);font-family:'DM Sans',sans-serif;">Apps by</div>
+        <div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.2);font-family:'DM Sans',sans-serif;">Apps by</div>
         <div style="display:flex;justify-content:center;">
             <svg id="logo" width="200" height="74" viewBox="10 0 290 140" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -619,6 +616,49 @@ document.querySelector('form').addEventListener('submit', function() {
         btn.disabled = false;
     }, 8000);
 });
+</script>
+
+<script>
+// ── Keyboard-aware layout for mobile ──
+// When soft keyboard opens, viewport shrinks. Collapse top panel to save space.
+(function() {
+    const authLogo = document.querySelector('.auth-logo');
+    const nattsPanel = document.querySelector('.natts-panel');
+    if (!authLogo) return;
+
+    const originalHeight = window.innerHeight;
+
+    function onResize() {
+        const currentHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+        const keyboardVisible = currentHeight < originalHeight * 0.85;
+
+        if (keyboardVisible) {
+            // Keyboard open — collapse top panel, hide natts panel
+            authLogo.style.padding = '6px 24px 4px';
+            authLogo.querySelector('.logo-icon').style.display = 'none';
+            authLogo.querySelector('p').style.display = 'none';
+            authLogo.querySelector('h1').style.fontSize = '16px';
+            authLogo.querySelector('h1').style.marginBottom = '0';
+            if (nattsPanel) nattsPanel.style.display = 'none';
+        } else {
+            // Keyboard closed — restore
+            authLogo.style.padding = '';
+            const icon = authLogo.querySelector('.logo-icon');
+            if (icon) icon.style.display = '';
+            const byLine = authLogo.querySelector('p');
+            if (byLine) byLine.style.display = '';
+            authLogo.querySelector('h1').style.fontSize = '';
+            authLogo.querySelector('h1').style.marginBottom = '';
+            if (nattsPanel) nattsPanel.style.display = '';
+        }
+    }
+
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', onResize);
+    } else {
+        window.addEventListener('resize', onResize);
+    }
+})();
 </script>
 </body>
 </html>
