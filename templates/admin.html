@@ -74,7 +74,8 @@
     <div class="card-body">
       <h3 style="font-size:15px;margin-bottom:12px;">⭐ Premium Users ({{ premium_count }})</h3>
       {% if premium_users %}
-      <table style="width:100%;font-size:13px;border-collapse:collapse;">
+      <div style="overflow-x:auto;">
+      <table style="width:100%;min-width:520px;font-size:13px;border-collapse:collapse;">
         <thead><tr style="background:#f8fafc;">
           <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Username</th>
           <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Plan</th>
@@ -96,6 +97,7 @@
           {% endfor %}
         </tbody>
       </table>
+      </div>
       {% else %}
       <p style="color:#9ca3af;font-size:13px;">No premium users yet</p>
       {% endif %}
@@ -107,7 +109,8 @@
     <div class="card-body">
       <h3 style="font-size:15px;margin-bottom:12px;">⏰ Expired Trial Users ({{ expired_count }})</h3>
       {% if expired_users %}
-      <table style="width:100%;font-size:13px;border-collapse:collapse;">
+      <div style="overflow-x:auto;">
+      <table style="width:100%;min-width:520px;font-size:13px;border-collapse:collapse;">
         <thead><tr style="background:#f8fafc;">
           <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Username</th>
           <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Email</th>
@@ -125,6 +128,7 @@
           {% endfor %}
         </tbody>
       </table>
+      </div>
       {% else %}
       <p style="color:#9ca3af;font-size:13px;">No expired users</p>
       {% endif %}

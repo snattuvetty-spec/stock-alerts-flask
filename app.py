@@ -345,7 +345,7 @@ def login():
                         token = ''.join(random.choices(string.ascii_letters + string.digits, k=32))
                         supabase.table('users').update({
                             'session_token': token,
-                            'last_login': datetime.now().isoformat()
+                            'last_login': datetime.now(pytz.timezone('Australia/Brisbane')).strftime('%Y-%m-%dT%H:%M:%S')
                         }).eq('username', user['username']).execute()
                         session['username'] = user['username']
                         session['name'] = user['name']
@@ -530,7 +530,7 @@ def logout():
         try:
             supabase.table('users').update({
                 'session_token': None,
-                'last_logout': datetime.now().isoformat()
+                'last_logout': datetime.now(pytz.timezone('Australia/Brisbane')).strftime('%Y-%m-%dT%H:%M:%S')
             }).eq('username', session['username']).execute()
         except:
             pass
@@ -1405,7 +1405,7 @@ def admin_export():
         ws.title = 'Users'
 
         # Header row
-        headers = ['Username', 'User Type', 'Plan', 'Expiry / Renewal Date', 'Email']
+        headers = ['Username', 'User Type', 'Plan', 'Expiry / Renewal Date', 'Email', 'Last Login (AEST)', 'Last Logout (AEST)']
         header_fill = PatternFill('solid', start_color='2E86AB')
         header_font = Font(bold=True, color='FFFFFF', name='Arial', size=11)
 
@@ -1418,7 +1418,7 @@ def admin_export():
         ws.row_dimensions[1].height = 22
 
         # Column widths
-        col_widths = [20, 20, 18, 25, 35]
+        col_widths = [20, 20, 18, 25, 35, 22, 22]
         for i, width in enumerate(col_widths, 1):
             ws.column_dimensions[ws.cell(row=1, column=i).column_letter].width = width
 
@@ -1474,7 +1474,11 @@ def admin_export():
             # Row fill alternating
             row_fill = PatternFill('solid', start_color='EBF5FB') if row_idx % 2 == 0 else PatternFill('solid', start_color='FFFFFF')
 
-            row_data = [u.get('username',''), user_type, plan_label, expiry_label, u.get('email','')]
+            def fmt_dt(val):
+                if not val: return ''
+                return str(val)[:16].replace('T', ' ')
+            row_data = [u.get('username',''), user_type, plan_label, expiry_label, u.get('email',''),
+                        fmt_dt(u.get('last_login','')), fmt_dt(u.get('last_logout',''))]
             for col_idx, value in enumerate(row_data, 1):
                 cell = ws.cell(row=row_idx, column=col_idx, value=value)
                 cell.fill = row_fill
