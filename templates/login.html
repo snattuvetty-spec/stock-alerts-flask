@@ -224,34 +224,40 @@
             z-index: 1;
         }
 
-        /* Mobile fullscreen - sticky header + scrollable form */
+        
+        /* ── 3-PANEL FIXED MOBILE LAYOUT ── */
         @media (max-width: 480px) {
-            body { 
-                padding: 0; 
-                flex-direction: column;
+            body {
+                padding: 0;
                 justify-content: flex-start;
                 align-items: stretch;
                 height: 100vh;
+                height: 100dvh;
                 overflow: hidden;
             }
             .auth-wrapper {
                 max-width: 100%;
                 padding: 0;
                 height: 100vh;
+                height: 100dvh;
                 display: flex;
                 flex-direction: column;
             }
-            /* Sticky top section - always visible */
+            /* TOP PANEL — logo, fixed height */
             .auth-logo {
-                background: var(--navy, #020b18);
-                padding: 28px 24px 20px;
-                margin-bottom: 0;
                 flex-shrink: 0;
+                background: #020b18;
+                padding: 20px 24px 16px;
+                margin-bottom: 0;
                 border-bottom: 1px solid rgba(0,198,255,0.12);
-                position: relative;
-                z-index: 2;
+                text-align: center;
             }
-            /* Scrollable bottom section */
+            .auth-logo .logo-icon { width: 64px; height: 64px; margin-bottom: 10px; }
+            .auth-logo .logo-icon img { width: 64px; height: 64px; }
+            .auth-logo h1 { font-size: 22px; }
+            .auth-logo p { font-size: 12px; margin-top: 2px; }
+
+            /* MIDDLE PANEL — form, scrollable if needed */
             .auth-card {
                 flex: 1;
                 overflow-y: auto;
@@ -260,40 +266,31 @@
                 border-left: none;
                 border-right: none;
                 border-top: none;
-                padding: 24px 20px 40px;
+                border-bottom: 1px solid rgba(255,255,255,0.06);
+                padding: 20px 20px 16px;
+                min-height: 0;
             }
-            footer { 
-                padding: 12px;
-                text-align: center;
+
+            /* BOTTOM PANEL — natts logo + copyright, fixed */
+            .natts-panel {
                 flex-shrink: 0;
+                background: linear-gradient(180deg, #061220 0%, #020b18 100%);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                padding: 10px 0 12px;
+                gap: 4px;
             }
+            footer { display: none; }
         }
 
-        .natts-footer {
-            text-align: center;
-            padding: 10px 0 2px;
-            position: relative;
-            z-index: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+        /* Desktop — hide natts-panel, show footer */
+        @media (min-width: 481px) {
+            .natts-panel { display: none; }
         }
-        .natts-footer .apps-by-label {
-            font-size: 10px;
-            letter-spacing: 3px;
-            text-transform: uppercase;
-            color: rgba(255,255,255,0.25);
-            margin-bottom: 6px;
-            font-family: 'DM Sans', sans-serif;
-            text-align: center;
-        }
-        .natts-logo-wrap {
-            display: flex;
-            justify-content: center;
-            background: transparent;
-        }
-        .natts-logo-wrap svg { display: block; overflow: visible; }
     </style>
+</head>
 </head>
 <body>
 
@@ -340,10 +337,10 @@
     </div>
 </div>
 
-<div class="natts-footer">
-    <div class="apps-by-label">Apps by</div>
-    <div class="natts-logo-wrap">
-        <svg id="logo" width="240" height="88" viewBox="10 0 290 140" xmlns="http://www.w3.org/2000/svg">
+<div class="natts-panel">
+    <div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.2);font-family:'DM Sans',sans-serif;">Apps by</div>
+    <div style="display:flex;justify-content:center;">
+        <svg id="logo" width="200" height="74" viewBox="10 0 290 140" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <!-- Glow filter for the ball -->
     <filter id="glow" x="-200%" y="-200%" width="500%" height="500%">
@@ -452,6 +449,7 @@
 
 </svg>
     </div>
+    <div style="font-size:10px;color:rgba(255,255,255,0.2);font-family:'DM Sans',sans-serif;">© 2026 Natts Digital. All rights reserved.</div>
 </div>
 <script>
   // ── Measure NATTS bounding box to get exact right edge ──
@@ -588,7 +586,7 @@
 
   setTimeout(() => requestAnimationFrame(animate), 400);
 </script>
-<footer style="padding-bottom:8px;text-align:center;width:100%;">© 2026 Natts Digital. All rights reserved.</footer>
+<footer>© 2026 Natts Digital. All rights reserved.</footer>
 
 <script>
 // Split layout handles scroll - no scroll fix needed
