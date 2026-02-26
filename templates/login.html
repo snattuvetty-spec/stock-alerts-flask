@@ -269,31 +269,30 @@
             }
         }
 
-        /* Natts Digital animated footer */
         .natts-footer {
             text-align: center;
-            padding: 20px 0 8px;
+            padding: 10px 0 2px;
             position: relative;
             z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
-        .natts-footer .powered-label {
-            font-size: 9px;
+        .natts-footer .apps-by-label {
+            font-size: 10px;
             letter-spacing: 3px;
             text-transform: uppercase;
-            color: rgba(255,255,255,0.2);
-            margin-bottom: 10px;
+            color: rgba(255,255,255,0.25);
+            margin-bottom: 6px;
             font-family: 'DM Sans', sans-serif;
+            text-align: center;
         }
         .natts-logo-wrap {
-            background: #0a0f19;
-            border-radius: 10px;
-            padding: 14px 24px;
-            display: inline-block;
+            display: flex;
+            justify-content: center;
+            background: transparent;
         }
-        .natts-logo-wrap svg {
-            display: block;
-            overflow: visible;
-        }
+        .natts-logo-wrap svg { display: block; overflow: visible; }
     </style>
 </head>
 <body>
@@ -341,27 +340,10 @@
     </div>
 </div>
 
-<footer>© 2026 Natts Digital. All rights reserved.</footer>
-
-<script>
-// Split layout handles scroll - no scroll fix needed
-
-document.querySelector('form').addEventListener('submit', function() {
-    const btn = document.getElementById('loginBtn');
-    btn.classList.add('loading');
-    btn.querySelector('.btn-text').textContent = 'Logging in...';
-    btn.disabled = true;
-    setTimeout(() => {
-        btn.classList.remove('loading');
-        btn.querySelector('.btn-text').textContent = '🔐 Login';
-        btn.disabled = false;
-    }, 8000);
-});
-</script>
 <div class="natts-footer">
-    <div class="powered-label">Powered by</div>
+    <div class="apps-by-label">Apps by</div>
     <div class="natts-logo-wrap">
-        <svg id="logo" width="380" height="140" viewBox="0 0 380 140" xmlns="http://www.w3.org/2000/svg">
+        <svg id="logo" width="240" height="88" viewBox="10 0 290 140" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <!-- Glow filter for the ball -->
     <filter id="glow" x="-200%" y="-200%" width="500%" height="500%">
@@ -605,6 +587,23 @@ document.querySelector('form').addEventListener('submit', function() {
   }
 
   setTimeout(() => requestAnimationFrame(animate), 400);
+</script>
+<footer style="padding-bottom:8px;text-align:center;width:100%;">© 2026 Natts Digital. All rights reserved.</footer>
+
+<script>
+// Split layout handles scroll - no scroll fix needed
+
+document.querySelector('form').addEventListener('submit', function() {
+    const btn = document.getElementById('loginBtn');
+    btn.classList.add('loading');
+    btn.querySelector('.btn-text').textContent = 'Logging in...';
+    btn.disabled = true;
+    setTimeout(() => {
+        btn.classList.remove('loading');
+        btn.querySelector('.btn-text').textContent = '🔐 Login';
+        btn.disabled = false;
+    }, 8000);
+});
 </script>
 </body>
 </html>
