@@ -345,7 +345,7 @@ def login():
                         token = ''.join(random.choices(string.ascii_letters + string.digits, k=32))
                         supabase.table('users').update({
                             'session_token': token,
-                            'last_login': datetime.now(pytz.timezone('Australia/Brisbane')).strftime('%Y-%m-%dT%H:%M:%S')
+                            'last_login': datetime.now(ZoneInfo('Australia/Brisbane')).strftime('%Y-%m-%dT%H:%M:%S')
                         }).eq('username', user['username']).execute()
                         session['username'] = user['username']
                         session['name'] = user['name']
@@ -530,7 +530,7 @@ def logout():
         try:
             supabase.table('users').update({
                 'session_token': None,
-                'last_logout': datetime.now(pytz.timezone('Australia/Brisbane')).strftime('%Y-%m-%dT%H:%M:%S')
+                'last_logout': datetime.now(ZoneInfo('Australia/Brisbane')).strftime('%Y-%m-%dT%H:%M:%S')
             }).eq('username', session['username']).execute()
         except:
             pass
