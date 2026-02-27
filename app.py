@@ -1,3 +1,8 @@
+# Load .env file FIRST before anything else
+from dotenv import load_dotenv
+load_dotenv()
+
+
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, send_from_directory
 from supabase import create_client, Client
 import bcrypt
@@ -14,9 +19,6 @@ import string
 
 app = Flask(__name__)
 
-# Load .env file FIRST before anything else
-from dotenv import load_dotenv
-load_dotenv()
 
 app.secret_key = os.getenv('SECRET_KEY', 'natts-digital-secret-2026')
 
@@ -560,7 +562,7 @@ def dashboard():
                 status = 'triggered'
         alert_list.append({
             **a,
-            'price': f"${price:.3f}" if price else "—",
+            'price': f"{'₹' if '.NS' in a['symbol'] or '.BO' in a['symbol'] else 'A$' if '.AX' in a['symbol'] else '$'}{price:.3f}" if price else "—",
             'change_pct': f"{change_pct:+.2f}%" if change_pct else "",
             'change_up': change_pct >= 0 if change_pct else True,
             'status': status,
@@ -851,7 +853,164 @@ def get_price(symbol):
     except Exception as e:
         print(f"ASX market search error for {symbol}: {str(e)}")
     
+    # ── NSE (India) ──
+    try:
+        ns_sym = symbol if symbol.endswith('.NS') else symbol + '.NS'
+        if not symbol.endswith('.AX') and not symbol.endswith('.BO'):
+            ticker_ns = yf.Ticker(ns_sym)
+            data_ns = ticker_ns.history(period='1d', timeout=10)
+            if not data_ns.empty:
+                price_ns = float(data_ns['Close'].iloc[-1])
+                cached = supabase.table('stock_info').select('*').eq('symbol', ns_sym).execute()
+                if cached.data:
+                    stock_name = cached.data[0]['company_name']
+                    currency = cached.data[0]['currency']
+                else:
+                    stock_name = ns_sym
+                    currency = 'INR'
+                    try:
+                        info_ns = ticker_ns.info
+                        if info_ns:
+                            fetched_name = (info_ns.get('longName') or info_ns.get('shortName') or ns_sym)
+                            if fetched_name != ns_sym:
+                                stock_name = fetched_name
+                                currency = info_ns.get('currency', 'INR')
+                                try:
+                                    supabase.table('stock_info').insert({
+                                        'symbol': ns_sym, 'company_name': stock_name,
+                                        'exchange': 'NSE', 'currency': currency, 'market': 'India'
+                                    }).execute()
+                                except: pass
+                    except Exception as e:
+                        print(f"NSE info error for {ns_sym}: {str(e)}")
+                results.append({
+                    'symbol': ns_sym, 'name': stock_name,
+                    'exchange': 'NSE', 'price': price_ns,
+                    'currency': currency, 'market': 'India'
+                })
+    except Exception as e:
+        print(f"NSE market search error for {symbol}: {str(e)}")
+
+    # ── BSE (India) ──
+    try:
+        bo_sym = symbol if symbol.endswith('.BO') else symbol + '.BO'
+        if not symbol.endswith('.AX') and not symbol.endswith('.NS'):
+            ticker_bo = yf.Ticker(bo_sym)
+            data_bo = ticker_bo.history(period='1d', timeout=10)
+            if not data_bo.empty:
+                price_bo = float(data_bo['Close'].iloc[-1])
+                cached = supabase.table('stock_info').select('*').eq('symbol', bo_sym).execute()
+                if cached.data:
+                    stock_name = cached.data[0]['company_name']
+                    currency = cached.data[0]['currency']
+                else:
+                    stock_name = bo_sym
+                    currency = 'INR'
+                    try:
+                        info_bo = ticker_bo.info
+                        if info_bo:
+                            fetched_name = (info_bo.get('longName') or info_bo.get('shortName') or bo_sym)
+                            if fetched_name != bo_sym:
+                                stock_name = fetched_name
+                                currency = info_bo.get('currency', 'INR')
+                                try:
+                                    supabase.table('stock_info').insert({
+                                        'symbol': bo_sym, 'company_name': stock_name,
+                                        'exchange': 'BSE', 'currency': currency, 'market': 'India'
+                                    }).execute()
+                                except: pass
+                    except Exception as e:
+                        print(f"BSE info error for {bo_sym}: {str(e)}")
+                results.append({
+                    'symbol': bo_sym, 'name': stock_name,
+                    'exchange': 'BSE', 'price': price_bo,
+                    'currency': currency, 'market': 'India'
+                })
+    except Exception as e:
+        print(f"BSE market search error for {symbol}: {str(e)}")
+
     return jsonify({'results': results})
+
+
+# ============================================================
+# WILDCARD SEARCH
+# ============================================================
+@app.route('/search_symbol')
+@login_required
+def search_symbol():
+    """Wildcard search — finds stocks by partial name or symbol using yfinance Search API
+       Also probes .NS/.BO/.AX suffixes directly for bare symbols"""
+    import yfinance as yf
+    query = request.args.get('q', '').strip()
+    if not query or len(query) < 2:
+        return jsonify({'results': []})
+
+    results = []
+    seen = set()
+
+    # ── Step 1: Yahoo Finance Search API ──
+    try:
+        search = yf.Search(query, max_results=10)
+        quotes = search.quotes or []
+        for q in quotes:
+            symbol = q.get('symbol', '')
+            name = q.get('longname') or q.get('shortname') or symbol
+            exchange = q.get('exchange', '')
+            type_ = q.get('quoteType', '')
+            if type_ not in ('EQUITY', 'ETF', 'MUTUALFUND'):
+                continue
+            if symbol in seen:
+                continue
+            seen.add(symbol)
+            if symbol.endswith('.NS'):
+                market = 'India'; currency = 'INR'; exch_label = 'NSE'
+            elif symbol.endswith('.BO'):
+                market = 'India'; currency = 'INR'; exch_label = 'BSE'
+            elif symbol.endswith('.AX'):
+                market = 'Australia'; currency = 'AUD'; exch_label = 'ASX'
+            else:
+                market = 'US'; currency = 'USD'; exch_label = exchange or 'US Market'
+            results.append({
+                'symbol': symbol, 'name': name,
+                'exchange': exch_label, 'market': market,
+                'currency': currency, 'type': type_
+            })
+    except Exception as e:
+        print(f"Search API error: {str(e)}")
+
+    # ── Step 2: Probe .NS, .BO, .AX directly if bare symbol (no suffix) ──
+    bare = query.upper().strip()
+    if '.' not in bare:
+        for suffix, exch_label, market, currency in [
+            ('.NS', 'NSE', 'India', 'INR'),
+            ('.BO', 'BSE', 'India', 'INR'),
+            ('.AX', 'ASX', 'Australia', 'AUD'),
+        ]:
+            probe_sym = bare + suffix
+            if probe_sym in seen:
+                continue
+            try:
+                t = yf.Ticker(probe_sym)
+                d = t.history(period='1d', timeout=8)
+                if not d.empty:
+                    # Try to get company name
+                    name = probe_sym
+                    try:
+                        info = t.info
+                        name = info.get('longName') or info.get('shortName') or probe_sym
+                    except:
+                        pass
+                    seen.add(probe_sym)
+                    results.append({
+                        'symbol': probe_sym, 'name': name,
+                        'exchange': exch_label, 'market': market,
+                        'currency': currency, 'type': 'EQUITY'
+                    })
+            except:
+                pass
+
+    return jsonify({'results': results})
+
 
 # ============================================================
 # EDIT ALERT

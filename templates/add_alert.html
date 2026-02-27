@@ -26,8 +26,14 @@
             <label>Stock Symbol</label>
             <input type="text" id="symbolSearch" placeholder="e.g. AAPL, HAL, CBA, BHP"
                    style="text-transform:uppercase;">
+            <!-- Autocomplete dropdown -->
+            <div id="autocompleteBox" style="position:relative;">
+                <div id="autocompleteList" style="display:none;position:absolute;top:0;left:0;right:0;
+                     background:white;border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);
+                     z-index:100;max-height:260px;overflow-y:auto;"></div>
+            </div>
             <div class="input-hint">
-                Enter the stock ticker symbol. We'll search both US (NASDAQ/NYSE) and Australian (ASX) markets and show you the full company name.
+                Type a company name (e.g. "Tata", "Apple") or exact symbol (e.g. AAPL, BHP.AX, RELIANCE.NS)
             </div>
         </div>
         <button onclick="searchStock()" class="btn btn-primary" id="searchBtn">
@@ -48,7 +54,7 @@
         
         <div class="form-group">
             <label>Target Price ($)</label>
-            <input type="number" name="target" step="any" min="0.001" placeholder="0.000" required>
+            <input type="number" name="target" step="0.01" min="0.01" placeholder="0.00" required>
         </div>
         <div class="form-group">
             <label>Alert When Price Goes</label>
@@ -70,57 +76,116 @@
 
 <script>
 let searchTimer;
+let autocompleteTimer;
 
-document.getElementById('symbolSearch').addEventListener('input', function() {
+const input = document.getElementById('symbolSearch');
+const autocompleteList = document.getElementById('autocompleteList');
+
+// ── AUTOCOMPLETE as user types ──
+input.addEventListener('input', function() {
+    const val = this.value.trim();
+    clearTimeout(autocompleteTimer);
     clearTimeout(searchTimer);
-    const sym = this.value.toUpperCase().trim();
-    if (sym.length >= 1) {
-        searchTimer = setTimeout(() => searchStock(), 800);
+
+    if (val.length < 2) {
+        autocompleteList.style.display = 'none';
+        return;
+    }
+    // Autocomplete dropdown after 350ms
+    autocompleteTimer = setTimeout(() => fetchAutocomplete(val), 350);
+    // Auto-search after 900ms if user stops typing (same as before)
+    searchTimer = setTimeout(() => {
+        autocompleteList.style.display = 'none';
+        searchStock();
+    }, 900);
+});
+
+async function fetchAutocomplete(query) {
+    try {
+        const res = await fetch(`/search_symbol?q=${encodeURIComponent(query)}`);
+        const data = await res.json();
+        if (!data.results || data.results.length === 0) {
+            autocompleteList.style.display = 'none';
+            return;
+        }
+        let html = '';
+        data.results.forEach(stock => {
+            const flag = stock.market === 'India' ? '🇮🇳' : stock.market === 'Australia' ? '🇦🇺' : '🇺🇸';
+            html += `<div onclick="pickAutocomplete('${stock.symbol}', '${stock.name.replace(/'/g,"\'")}', '${stock.exchange}', '${stock.currency}')"
+                style="padding:10px 14px;cursor:pointer;border-bottom:1px solid #f3f4f6;display:flex;justify-content:space-between;align-items:center;"
+                onmouseover="this.style.background='#f0f9ff'" onmouseout="this.style.background='white'">
+                <div>
+                    <span style="font-weight:700;color:#2E86AB;font-size:14px;">${stock.symbol}</span>
+                    <span style="color:#6b7280;font-size:12px;margin-left:8px;">${stock.name}</span>
+                </div>
+                <span style="font-size:12px;color:#9ca3af;">${flag} ${stock.exchange}</span>
+            </div>`;
+        });
+        autocompleteList.innerHTML = html;
+        autocompleteList.style.display = 'block';
+    } catch(e) {
+        autocompleteList.style.display = 'none';
+    }
+}
+
+function pickAutocomplete(symbol, name, exchange, currency) {
+    // User picked from autocomplete — fill the input and trigger price fetch
+    input.value = symbol;
+    autocompleteList.style.display = 'none';
+    searchStock();
+}
+
+// Hide autocomplete on outside click
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('#autocompleteBox') && e.target !== input) {
+        autocompleteList.style.display = 'none';
     }
 });
 
-document.getElementById('symbolSearch').addEventListener('keypress', function(e) {
+input.addEventListener('keypress', function(e) {
     if (e.key === 'Enter') {
         e.preventDefault();
+        autocompleteList.style.display = 'none';
         searchStock();
     }
 });
 
+// ── SEARCH STOCK (fetch live price after symbol confirmed) ──
 async function searchStock() {
-    const sym = document.getElementById('symbolSearch').value.toUpperCase().trim();
+    const sym = input.value.toUpperCase().trim();
     if (!sym) return;
-    
+
+    autocompleteList.style.display = 'none';
     const btn = document.getElementById('searchBtn');
     btn.disabled = true;
     btn.textContent = '⏳ Searching...';
-    
+
     const resultsDiv = document.getElementById('searchResults');
     resultsDiv.style.display = 'none';
-    
+
     try {
         const response = await fetch(`/price/${sym}`);
         const data = await response.json();
-        
+
         if (data.results && data.results.length > 0) {
             let html = '<h4 style="margin-bottom:12px;font-size:16px;">Select your stock:</h4>';
-            
+
             data.results.forEach(stock => {
-                const priceStr = stock.currency + ' $' + stock.price.toFixed(2);
-                // If name is same as symbol, show "Stock information" instead
+                const currSymbol = stock.currency === 'INR' ? '₹' : stock.currency === 'AUD' ? 'A$' : '$';
+                const priceStr = stock.currency + ' ' + currSymbol + stock.price.toFixed(2);
                 const displayName = stock.name === stock.symbol ? 'Company information unavailable' : stock.name;
-                
+                const flag = stock.market === 'India' ? '🇮🇳' : stock.market === 'Australia' ? '🇦🇺' : '🇺🇸';
+
                 html += `
-                <div onclick="selectStock('${stock.symbol}', '${stock.name}', '${stock.exchange}', ${stock.price}, '${stock.currency}')"
+                <div onclick="selectStock('${stock.symbol}', '${stock.name.replace(/'/g,"\'")}', '${stock.exchange}', ${stock.price}, '${stock.currency}')"
                      style="background:white;border:2px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:12px;cursor:pointer;transition:all 0.15s;"
                      onmouseover="this.style.borderColor='#2E86AB';this.style.backgroundColor='#f8fbfd'"
                      onmouseout="this.style.borderColor='#e5e7eb';this.style.backgroundColor='white'">
                     <div style="display:flex;justify-content:space-between;align-items:start;">
                         <div style="flex:1;">
                             <div style="font-size:18px;font-weight:700;color:#2E86AB;margin-bottom:6px;">${stock.symbol}</div>
-                            <div style="font-size:14px;color:${displayName === 'Company information unavailable' ? '#9ca3af' : '#1a1a2e'};font-weight:${displayName === 'Company information unavailable' ? '400' : '500'};margin-bottom:4px;font-style:${displayName === 'Company information unavailable' ? 'italic' : 'normal'};">${displayName}</div>
-                            <div style="font-size:12px;color:#6b7280;">
-                                ${stock.exchange} • ${stock.market} Market
-                            </div>
+                            <div style="font-size:14px;color:${displayName === 'Company information unavailable' ? '#9ca3af' : '#1a1a2e'};font-weight:${displayName === 'Company information unavailable' ? '400' : '500'};margin-bottom:4px;">${displayName}</div>
+                            <div style="font-size:12px;color:#6b7280;">${stock.exchange} • ${flag}</div>
                         </div>
                         <div style="text-align:right;margin-left:16px;">
                             <div style="font-size:18px;font-weight:700;color:#27ae60;">${priceStr}</div>
@@ -129,14 +194,14 @@ async function searchStock() {
                     </div>
                 </div>`;
             });
-            
+
             resultsDiv.innerHTML = html;
             resultsDiv.style.display = 'block';
         } else {
             resultsDiv.innerHTML = `
             <div class="alert alert-error">
                 ❌ No stock found for "${sym}"<br>
-                Please check the symbol and try again.
+                Try searching by company name (e.g. "Apple", "Tata", "BHP")
             </div>`;
             resultsDiv.style.display = 'block';
         }
@@ -144,7 +209,7 @@ async function searchStock() {
         resultsDiv.innerHTML = '<div class="alert alert-error">❌ Search failed. Please try again.</div>';
         resultsDiv.style.display = 'block';
     }
-    
+
     btn.disabled = false;
     btn.textContent = '🔍 Search Stock';
 }
@@ -152,8 +217,8 @@ async function searchStock() {
 function selectStock(symbol, name, exchange, price, currency) {
     document.getElementById('selectedSymbol').value = symbol;
     document.getElementById('selectedStockName').textContent = `${symbol} - ${name}`;
-    document.getElementById('selectedStockInfo').textContent = `${exchange} • Current Price: ${currency} $${price.toFixed(2)}`;
-    
+    const sym = currency === 'INR' ? '₹' : currency === 'AUD' ? 'A$' : '$';
+    document.getElementById('selectedStockInfo').textContent = `${exchange} • Current Price: ${currency} ${sym}${price.toFixed(2)}`;
     document.getElementById('search-step').style.display = 'none';
     document.getElementById('alertForm').style.display = 'block';
 }
@@ -162,8 +227,9 @@ function resetForm() {
     document.getElementById('search-step').style.display = 'block';
     document.getElementById('alertForm').style.display = 'none';
     document.getElementById('searchResults').style.display = 'none';
-    document.getElementById('symbolSearch').value = '';
-    document.getElementById('symbolSearch').focus();
+    input.value = '';
+    autocompleteList.style.display = 'none';
+    input.focus();
 }
 </script>
 {% endblock %}

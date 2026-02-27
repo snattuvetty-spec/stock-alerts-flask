@@ -193,7 +193,7 @@
                         data-value="{{ a.target }}"
                         title="Double-click to edit"
                         style="cursor:pointer;">
-                        ${{ "%.3f"|format(a.target) }}
+                        {% if ".NS" in a.symbol or ".BO" in a.symbol %}₹{% elif ".AX" in a.symbol %}A${% else %}${% endif %}{{ "%.3f"|format(a.target) }}
                     </td>
                     <td class="editable" 
                         data-alert-id="{{ a.id }}" 
