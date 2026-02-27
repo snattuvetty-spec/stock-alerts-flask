@@ -373,7 +373,7 @@
     </a>
     <div class="nav-links">
         <span class="nav-user">👋 {{ session.name.split()[0] }}</span>
-        <a href="/dashboard" class="{{ 'active' if request.path == '/dashboard' }}">
+        <a href="{{ '/admin' if session.get('username') == 'admin' else '/dashboard' }}" class="{{ 'active' if request.path in ['/dashboard', '/admin'] }}">
             🏠 <span class="label">Dashboard</span>
         </a>
         <a href="/add" class="btn-add">
