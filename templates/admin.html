@@ -104,24 +104,28 @@
     </div>
   </div>
 
-  <!-- Expired Trial Users -->
+  <!-- Trial Users -->
   <div class="card">
     <div class="card-body">
-      <h3 style="font-size:15px;margin-bottom:12px;">⏰ Expired Trial Users ({{ expired_count }})</h3>
-      {% if expired_users %}
+      <h3 style="font-size:15px;margin-bottom:12px;">🎁 Trial Users ({{ trial_count }})</h3>
+      {% if trial_users %}
       <div style="overflow-x:auto;">
       <table style="width:100%;min-width:520px;font-size:13px;border-collapse:collapse;">
         <thead><tr style="background:#f8fafc;">
           <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Username</th>
-          <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Email</th>
+          <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Plan</th>
           <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Last Login</th>
           <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Last Logout</th>
         </tr></thead>
         <tbody>
-          {% for u in expired_users %}
+          {% for u in trial_users %}
           <tr style="border-top:1px solid #e5e7eb;">
             <td style="padding:8px;">{{ u.username }}</td>
-            <td style="padding:8px;color:#6b7280;">{{ u.email }}</td>
+            <td style="padding:8px;">
+              <span style="background:#e8f0fe;color:#3730a3;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;">
+                Trial
+              </span>
+            </td>
             <td style="padding:8px;color:#6b7280;font-size:12px;">{{ u.get('last_login', '')[:16]|replace('T',' ') if u.get('last_login') else '—' }}</td>
             <td style="padding:8px;color:#6b7280;font-size:12px;">{{ u.get('last_logout', '')[:16]|replace('T',' ') if u.get('last_logout') else '—' }}</td>
           </tr>
@@ -130,7 +134,7 @@
       </table>
       </div>
       {% else %}
-      <p style="color:#9ca3af;font-size:13px;">No expired users</p>
+      <p style="color:#9ca3af;font-size:13px;">No users in trial</p>
       {% endif %}
     </div>
   </div>
