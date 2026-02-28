@@ -74,9 +74,9 @@
     <div class="card-body">
       <h3 style="font-size:15px;margin-bottom:12px;">⭐ Premium Users ({{ premium_count }})</h3>
       {% if premium_users %}
-      <div style="overflow-x:auto;">
+      <div style="overflow-x:auto;overflow-y:auto;max-height:320px;">
       <table style="width:100%;min-width:520px;font-size:13px;border-collapse:collapse;">
-        <thead><tr style="background:#f8fafc;">
+        <thead style="position:sticky;top:0;z-index:1;"><tr style="background:#f8fafc;">
           <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Username</th>
           <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Plan</th>
           <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Last Login</th>
@@ -109,9 +109,9 @@
     <div class="card-body">
       <h3 style="font-size:15px;margin-bottom:12px;">🎁 Trial Users ({{ trial_count }})</h3>
       {% if trial_users %}
-      <div style="overflow-x:auto;">
+      <div style="overflow-x:auto;overflow-y:auto;max-height:320px;">
       <table style="width:100%;min-width:520px;font-size:13px;border-collapse:collapse;">
-        <thead><tr style="background:#f8fafc;">
+        <thead style="position:sticky;top:0;z-index:1;"><tr style="background:#f8fafc;">
           <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Username</th>
           <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Plan</th>
           <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Last Login</th>
