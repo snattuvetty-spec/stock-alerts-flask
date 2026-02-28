@@ -420,6 +420,22 @@ Your account is ready! Here's what to do next:
 5️⃣ Start adding stock alerts! 📊
 
 You have 21 days free trial to explore all features."""
+
+                    # Notify admin via Telegram about new signup
+                    try:
+                        admin_chat_id = os.getenv('TELEGRAM_CHAT_ID')
+                        if admin_chat_id:
+                            admin_msg = (
+                                f"🆕 New User Signed Up!\n\n"
+                                f"👤 Username: {username}\n"
+                                f"📧 Email: {email}\n"
+                                f"🙋 Name: {name}\n"
+                                f"📅 Trial ends: {trial_ends[:10]}\n"
+                                f"⏰ Time: {datetime.now(ZoneInfo('Australia/Brisbane')).strftime('%d %b %Y %H:%M')} AEST"
+                            )
+                            send_telegram(admin_msg, admin_chat_id)
+                    except Exception as te:
+                        print(f"Admin signup notification error: {str(te)}")
             except Exception as e:
                 error = f"Error: {str(e)}"
     return render_template('signup.html', error=error, success=success)
