@@ -1449,21 +1449,35 @@ def settings():
         s = supabase.table('user_settings').select('*').eq('username', username).execute().data
         user_settings = s[0] if s else {}
     
-    # Get premium status and cancellation info
-    user = supabase.table('users').select('premium, subscription_cancel_at_period_end, subscription_plan').eq('username', username).execute().data
+    # Get premium status, trial info and cancellation info
+    user = supabase.table('users').select('premium, subscription_cancel_at_period_end, subscription_plan, trial_ends').eq('username', username).execute().data
     is_premium = user[0]['premium'] if user else False
     cancel_at_period_end = user[0].get('subscription_cancel_at_period_end', False) if user else False
     subscription_plan = user[0].get('subscription_plan', 'monthly') if user else 'monthly'
+    trial_ends = user[0].get('trial_ends', '') if user else ''
     user_settings['premium'] = is_premium
     user_settings['subscription_cancel_at_period_end'] = cancel_at_period_end
     user_settings['subscription_plan'] = subscription_plan
+
+    # Calculate days left in trial
+    days_left = None
+    trial_ends_display = None
+    if not is_premium and trial_ends:
+        try:
+            te = datetime.fromisoformat(trial_ends.replace('Z', ''))
+            days_left = max(0, (te - datetime.now()).days)
+            trial_ends_display = te.strftime('%d %B %Y')
+        except:
+            pass
 
     return render_template('settings.html',
         username=username,
         name=session.get('name', username),
         settings=user_settings,
         error=error,
-        success=success
+        success=success,
+        days_left=days_left,
+        trial_ends_display=trial_ends_display
     )
 
 

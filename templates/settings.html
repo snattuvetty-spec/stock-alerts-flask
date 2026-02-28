@@ -12,21 +12,29 @@
     {% if not settings.get('premium') %}
 
     <!-- Free Trial Banner — prominent, reassuring -->
-    <div class="card" style="border:2px solid #27ae60;">
+    <div class="card" style="border:2px solid #27ae60;background:linear-gradient(135deg,rgba(39,174,96,0.08),rgba(39,174,96,0.03));">
         <div class="card-body">
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
-                <span style="font-size:32px;">🎁</span>
+            <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px;">
+                <span style="font-size:36px;">🎁</span>
                 <div>
                     <h3 style="margin:0;font-size:18px;color:#27ae60;">You're on a Free Trial!</h3>
-                    <p style="margin:4px 0 0;font-size:13px;color:#6b7280;">
-                        {% if settings.get('days_left') is not none %}
-                            <strong style="color:#27ae60;">{{ settings.get('days_left') }} days remaining</strong> — enjoy full access, no payment needed yet
-                        {% else %}
-                            Full access to all features — no payment needed yet
-                        {% endif %}
-                    </p>
+                    <p style="margin:4px 0 0;font-size:13px;color:#6b7280;">Full access to all features — no payment needed yet</p>
                 </div>
             </div>
+
+            {% if days_left is not none and trial_ends_display %}
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+                <div style="background:white;border:1px solid #d1fae5;border-radius:8px;padding:12px;text-align:center;">
+                    <div style="font-size:28px;font-weight:800;color:#27ae60;">{{ days_left }}</div>
+                    <div style="font-size:12px;color:#6b7280;margin-top:2px;">Days Remaining</div>
+                </div>
+                <div style="background:white;border:1px solid #d1fae5;border-radius:8px;padding:12px;text-align:center;">
+                    <div style="font-size:14px;font-weight:700;color:#374151;">{{ trial_ends_display }}</div>
+                    <div style="font-size:12px;color:#6b7280;margin-top:2px;">Trial Expires On</div>
+                </div>
+            </div>
+            {% endif %}
+
             <div style="background:#e8f5e9;border-radius:8px;padding:10px 14px;font-size:13px;color:#2e7d32;">
                 ✅ All features unlocked &nbsp;•&nbsp; ✅ No credit card required &nbsp;•&nbsp; ✅ Cancel anytime
             </div>
