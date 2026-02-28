@@ -8,36 +8,62 @@
 
 <div style="display:grid;gap:20px;max-width:600px;">
 
-    <!-- Premium Upgrade -->
+    <!-- Trial / Upgrade Status -->
     {% if not settings.get('premium') %}
-    <div class="card" style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;">
+
+    <!-- Free Trial Banner — prominent, reassuring -->
+    <div class="card" style="border:2px solid #27ae60;">
         <div class="card-body">
-            <h3 style="margin-bottom:12px;font-size:18px;color:white;">⭐ Upgrade to Premium</h3>
-            <p style="opacity:0.95;margin-bottom:16px;font-size:14px;">
-                Unlock unlimited alerts and premium features
-            </p>
-            
-            <div style="display:grid;gap:12px;margin-bottom:20px;">
-                <form method="POST" action="/create-checkout-session" style="margin:0;">
-                    <input type="hidden" name="plan" value="monthly">
-                    <button type="submit" style="width:100%;background:white;color:#667eea;border:none;padding:12px;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px;">
-                        💳 Monthly - $3.99/month AUD
-                    </button>
-                </form>
-                
-                <form method="POST" action="/create-checkout-session" style="margin:0;">
-                    <input type="hidden" name="plan" value="annual">
-                    <button type="submit" style="width:100%;background:rgba(255,255,255,0.2);color:white;border:2px solid white;padding:12px;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px;">
-                        🎁 Annual - $39.99/year AUD <span style="background:#27ae60;padding:2px 8px;border-radius:4px;font-size:11px;margin-left:8px;">Save 2 months</span>
-                    </button>
-                </form>
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+                <span style="font-size:32px;">🎁</span>
+                <div>
+                    <h3 style="margin:0;font-size:18px;color:#27ae60;">You're on a Free Trial!</h3>
+                    <p style="margin:4px 0 0;font-size:13px;color:#6b7280;">
+                        {% if settings.get('days_left') is not none %}
+                            <strong style="color:#27ae60;">{{ settings.get('days_left') }} days remaining</strong> — enjoy full access, no payment needed yet
+                        {% else %}
+                            Full access to all features — no payment needed yet
+                        {% endif %}
+                    </p>
+                </div>
             </div>
-            
-            <div style="font-size:12px;opacity:0.9;">
-                ✓ Unlimited alerts &nbsp;•&nbsp; ✓ Priority support &nbsp;•&nbsp; ✓ Cancel anytime
+            <div style="background:#e8f5e9;border-radius:8px;padding:10px 14px;font-size:13px;color:#2e7d32;">
+                ✅ All features unlocked &nbsp;•&nbsp; ✅ No credit card required &nbsp;•&nbsp; ✅ Cancel anytime
             </div>
         </div>
     </div>
+
+    <!-- Upgrade Section — softer, optional feel -->
+    <div class="card">
+        <div class="card-body">
+            <h3 style="margin-bottom:4px;font-size:16px;">⭐ Continue After Trial</h3>
+            <p style="color:#6b7280;font-size:13px;margin-bottom:16px;">
+                When your trial ends, choose a plan to keep your alerts running. No action needed right now.
+            </p>
+
+            <div style="display:grid;gap:12px;margin-bottom:16px;">
+                <form method="POST" action="/create-checkout-session" style="margin:0;">
+                    <input type="hidden" name="plan" value="annual">
+                    <button type="submit" style="width:100%;background:#27ae60;color:white;border:none;padding:12px;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px;">
+                        🎁 Annual — $39.99/year AUD
+                        <span style="background:rgba(255,255,255,0.25);padding:2px 8px;border-radius:4px;font-size:11px;margin-left:8px;">Best Value</span>
+                    </button>
+                </form>
+
+                <form method="POST" action="/create-checkout-session" style="margin:0;">
+                    <input type="hidden" name="plan" value="monthly">
+                    <button type="submit" style="width:100%;background:white;color:#667eea;border:2px solid #667eea;padding:12px;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px;">
+                        💳 Monthly — $3.99/month AUD
+                    </button>
+                </form>
+            </div>
+
+            <div style="font-size:12px;color:#9ca3af;text-align:center;">
+                You won't be charged until your trial ends &nbsp;•&nbsp; Cancel anytime
+            </div>
+        </div>
+    </div>
+
     {% endif %}
 
     <!-- Premium Subscription Management -->
