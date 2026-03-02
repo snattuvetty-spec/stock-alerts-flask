@@ -349,15 +349,70 @@ function togglePromo(e) {
         group.style.display = 'none';
         toggle.textContent = '🎟️ Have a promo code?';
         document.getElementById('promoInput').value = '';
+        document.getElementById('promoMsg').style.display = 'none';
     }
 }
 
 // Auto uppercase promo code as user types
 document.getElementById('promoInput').addEventListener('input', function() {
     this.value = this.value.toUpperCase();
+    document.getElementById('promoMsg').style.display = 'none';
 });
 
-document.querySelector('form').addEventListener('submit', function() {
+let promoValidated = false; // tracks if user already confirmed invalid code
+
+document.querySelector('form').addEventListener('submit', async function(e) {
+    const promoInput = document.getElementById('promoInput');
+    const promoGroup = document.getElementById('promoGroup');
+    const promoMsg = document.getElementById('promoMsg');
+    const code = promoInput.value.trim().toUpperCase();
+
+    // If promo field is visible and has a value and not yet validated
+    if (promoGroup.style.display !== 'none' && code && !promoValidated) {
+        e.preventDefault();
+
+        // Validate code against server
+        try {
+            const res = await fetch(`/validate_promo?code=${encodeURIComponent(code)}`);
+            const data = await res.json();
+
+            if (data.valid) {
+                // Valid code — show success and submit
+                promoMsg.style.cssText = 'display:block;color:#4ade80;font-size:13px;margin-top:6px;';
+                promoMsg.textContent = `✅ Promo code applied! You get ${data.trial_days} days free trial.`;
+                promoValidated = true;
+                setTimeout(() => this.submit(), 800);
+            } else {
+                // Invalid code — show warning with two options
+                promoMsg.style.cssText = 'display:block;margin-top:8px;';
+                promoMsg.innerHTML = `
+                    <div style="background:rgba(231,76,60,0.15);border:1px solid rgba(231,76,60,0.4);
+                                border-radius:8px;padding:12px;font-size:13px;color:#ff8a80;">
+                        ⚠️ Invalid promo code <strong>${code}</strong>.<br>
+                        <span style="color:rgba(255,255,255,0.6);">What would you like to do?</span>
+                        <div style="display:flex;gap:8px;margin-top:10px;">
+                            <button type="button" onclick="fixPromoCode()"
+                                style="flex:1;padding:8px;border-radius:6px;border:1px solid rgba(0,198,255,0.5);
+                                       background:rgba(0,198,255,0.1);color:#00c6ff;font-size:12px;font-weight:600;cursor:pointer;">
+                                ✏️ Fix Code
+                            </button>
+                            <button type="button" onclick="continueWithout21()"
+                                style="flex:1;padding:8px;border-radius:6px;border:none;
+                                       background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);font-size:12px;font-weight:600;cursor:pointer;">
+                                Continue with 21 days →
+                            </button>
+                        </div>
+                    </div>`;
+            }
+        } catch(err) {
+            // Network error — just submit normally
+            promoValidated = true;
+            this.submit();
+        }
+        return;
+    }
+
+    // Normal submit
     const btn = document.getElementById('signupBtn');
     btn.classList.add('loading');
     btn.querySelector('.btn-text').textContent = 'Creating account...';
@@ -368,6 +423,19 @@ document.querySelector('form').addEventListener('submit', function() {
         btn.disabled = false;
     }, 8000);
 });
+
+function fixPromoCode() {
+    document.getElementById('promoMsg').style.display = 'none';
+    document.getElementById('promoInput').focus();
+    document.getElementById('promoInput').select();
+}
+
+function continueWithout21() {
+    // Clear promo code and submit
+    document.getElementById('promoInput').value = '';
+    promoValidated = true;
+    document.querySelector('form').submit();
+}
 </script>
 </body>
 </html>

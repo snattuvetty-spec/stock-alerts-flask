@@ -364,6 +364,26 @@ def login():
             error = f"Login error: {str(e)}"
     return render_template('login.html', error=error)
 
+@app.route('/validate_promo')
+def validate_promo():
+    """Check if a promo code is valid — called by signup form JS"""
+    code = request.args.get('code', '').strip().upper()
+    if not code:
+        return jsonify({'valid': False})
+    try:
+        promo = supabase.table('promo_codes').select('*').eq('code', code).eq('active', True).execute()
+        if promo.data:
+            p = promo.data[0]
+            max_uses = p.get('max_uses')
+            uses_count = p.get('uses_count', 0)
+            if max_uses is None or uses_count < max_uses:
+                return jsonify({'valid': True, 'trial_days': p['trial_days']})
+        return jsonify({'valid': False})
+    except Exception as e:
+        print(f"Validate promo error: {str(e)}")
+        return jsonify({'valid': False})
+
+
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     error = None
