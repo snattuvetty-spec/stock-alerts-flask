@@ -141,6 +141,53 @@
 
 </div>
 
+<!-- ============ PROMO CODES ============ -->
+<div class="card" style="margin-bottom:28px;">
+  <div class="card-body">
+    <h3 style="font-size:15px;margin-bottom:16px;">🎟️ Promo Codes</h3>
+    {% if promo_codes %}
+    <div style="overflow-x:auto;">
+    <table style="width:100%;font-size:13px;border-collapse:collapse;">
+      <thead style="position:sticky;top:0;z-index:1;">
+        <tr style="background:#f8fafc;">
+          <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Code</th>
+          <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Trial Days</th>
+          <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Uses</th>
+          <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Max Uses</th>
+          <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Status</th>
+          <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in promo_codes %}
+        <tr style="border-top:1px solid #e5e7eb;">
+          <td style="padding:8px;font-weight:700;font-family:monospace;color:#6c63ff;">{{ p.code }}</td>
+          <td style="padding:8px;">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;">
+              {{ p.trial_days }} days
+            </span>
+          </td>
+          <td style="padding:8px;font-weight:700;color:#2E86AB;">{{ p.uses_count }}</td>
+          <td style="padding:8px;color:#6b7280;">{{ p.max_uses if p.max_uses else '∞ Unlimited' }}</td>
+          <td style="padding:8px;">
+            {% if p.active %}
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;">Active</span>
+            {% else %}
+            <span style="background:#fde8e8;color:#c0392b;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;">Inactive</span>
+            {% endif %}
+          </td>
+          <td style="padding:8px;color:#6b7280;font-size:12px;">{{ p.description or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}
+    <p style="color:#9ca3af;font-size:13px;">No promo codes yet</p>
+    {% endif %}
+  </div>
+</div>
+
 <!-- ============ FEEDBACK ============ -->
 <div class="card" id="feedback">
   <div class="card-body">

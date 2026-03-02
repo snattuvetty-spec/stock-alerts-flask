@@ -392,8 +392,31 @@ def signup():
                 elif email.lower() in emails:
                     error = "Email already registered. Please use a different email or try forgot password."
                 else:
+                    # Check promo code
+                    promo_code = request.form.get('promo_code', '').strip().upper()
+                    trial_days = 21
+                    promo_applied = None
+                    promo_warning = None
+
+                    if promo_code:
+                        try:
+                            promo = supabase.table('promo_codes').select('*').eq('code', promo_code).eq('active', True).execute()
+                            if promo.data:
+                                p = promo.data[0]
+                                max_uses = p.get('max_uses')
+                                uses_count = p.get('uses_count', 0)
+                                if max_uses is None or uses_count < max_uses:
+                                    trial_days = p['trial_days']
+                                    promo_applied = promo_code
+                                else:
+                                    promo_warning = f"Promo code {promo_code} has expired. Signing you up with 21 days free trial."
+                            else:
+                                promo_warning = f"Invalid promo code '{promo_code}'. Signing you up with 21 days free trial."
+                        except Exception as pe:
+                            print(f"Promo code error: {str(pe)}")
+
                     # Create new user
-                    trial_ends = (datetime.now() + timedelta(days=21)).isoformat()
+                    trial_ends = (datetime.now() + timedelta(days=trial_days)).isoformat()
                     supabase.table('users').insert({
                         'username': username,
                         'password_hash': hash_password(password),
@@ -402,6 +425,14 @@ def signup():
                         'trial_ends': trial_ends,
                         'premium': False
                     }).execute()
+
+                    # Update promo code usage count
+                    if promo_applied:
+                        try:
+                            supabase.table('promo_codes').update({
+                                'uses_count': supabase.table('promo_codes').select('uses_count').eq('code', promo_applied).execute().data[0]['uses_count'] + 1
+                            }).eq('code', promo_applied).execute()
+                        except: pass
                     supabase.table('user_settings').insert({
                         'username': username,
                         'email': email,
@@ -409,7 +440,28 @@ def signup():
                         'telegram_enabled': False,
                         'notification_method': 'telegram'
                     }).execute()
-                    success = """🎉 Welcome to Stock Alerts Pro!
+                    if promo_warning:
+                        success = f"""{promo_warning}
+
+🎉 Welcome to Stock Alerts Pro! Your account is ready with a {trial_days}-day free trial.
+
+1️⃣ Login below with your username and password
+2️⃣ Go to Settings ⚙️ (top right menu)
+3️⃣ Add your Telegram Chat ID (search @userinfobot on Telegram to get it)
+4️⃣ Enable notifications and click Test
+5️⃣ Start adding stock alerts! 📊"""
+                    elif promo_applied:
+                        success = f"""🎉 Promo code applied! You have {trial_days} days free trial!
+
+Welcome to Stock Alerts Pro! Your account is ready.
+
+1️⃣ Login below with your username and password
+2️⃣ Go to Settings ⚙️ (top right menu)
+3️⃣ Add your Telegram Chat ID (search @userinfobot on Telegram to get it)
+4️⃣ Enable notifications and click Test
+5️⃣ Start adding stock alerts! 📊"""
+                    else:
+                        success = """🎉 Welcome to Stock Alerts Pro!
 
 Your account is ready! Here's what to do next:
 
@@ -425,11 +477,13 @@ You have 21 days free trial to explore all features."""
                     try:
                         admin_chat_id = os.getenv('TELEGRAM_CHAT_ID')
                         if admin_chat_id:
+                            promo_line = f"🎟️ Promo: {promo_applied} ({trial_days} days)\n" if promo_applied else ""
                             admin_msg = (
                                 f"🆕 New User Signed Up!\n\n"
                                 f"👤 Username: {username}\n"
                                 f"📧 Email: {email}\n"
                                 f"🙋 Name: {name}\n"
+                                f"{promo_line}"
                                 f"📅 Trial ends: {trial_ends[:10]}\n"
                                 f"⏰ Time: {datetime.now(ZoneInfo('Australia/Brisbane')).strftime('%d %b %Y %H:%M')} AEST"
                             )
@@ -1534,6 +1588,9 @@ def admin():
         # ---- Recent signups (last 5) ----
         recent_users = sorted(all_users, key=lambda u: u.get('id', ''), reverse=True)[:5]
 
+        # Promo code stats
+        promo_codes = supabase.table('promo_codes').select('*').order('uses_count', desc=True).execute().data or []
+
         return render_template('admin.html',
             total_users=total_users,
             premium_count=len(premium_users),
@@ -1548,6 +1605,7 @@ def admin():
             premium_users=premium_users,
             trial_users=trial_users,
             expired_users=expired_users,
+            promo_codes=promo_codes,
         )
     except Exception as e:
         print(f"Admin error: {str(e)}")

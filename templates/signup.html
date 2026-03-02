@@ -310,6 +310,22 @@
                 <label>Confirm Password</label>
                 <input type="password" name="confirm" placeholder="Repeat password" autocomplete="new-password" required>
             </div>
+            <!-- Promo Code (hidden by default) -->
+            <div style="text-align:center;margin-bottom:10px;">
+                <a href="#" onclick="togglePromo(event)" id="promoToggle"
+                   style="font-size:12px;color:rgba(0,198,255,0.7);text-decoration:none;">
+                    🎟️ Have a promo code?
+                </a>
+            </div>
+            <div id="promoGroup" style="display:none;margin-bottom:14px;">
+                <label style="display:block;font-size:12px;font-weight:600;color:rgba(255,255,255,0.6);margin-bottom:6px;letter-spacing:0.5px;text-transform:uppercase;">Promo Code</label>
+                <input type="text" name="promo_code" id="promoInput"
+                       placeholder="Enter promo code"
+                       style="text-transform:uppercase;"
+                       autocomplete="off">
+                <div id="promoMsg" style="font-size:12px;margin-top:6px;display:none;"></div>
+            </div>
+
             <button type="submit" class="btn" id="signupBtn">
                 <span class="btn-spinner"></span>
                 <span class="btn-text">📝 Create Account</span>
@@ -321,6 +337,26 @@
 <footer>© 2026 Natts Digital. All rights reserved.</footer>
 
 <script>
+function togglePromo(e) {
+    e.preventDefault();
+    const group = document.getElementById('promoGroup');
+    const toggle = document.getElementById('promoToggle');
+    if (group.style.display === 'none') {
+        group.style.display = 'block';
+        toggle.textContent = '✕ Hide promo code';
+        document.getElementById('promoInput').focus();
+    } else {
+        group.style.display = 'none';
+        toggle.textContent = '🎟️ Have a promo code?';
+        document.getElementById('promoInput').value = '';
+    }
+}
+
+// Auto uppercase promo code as user types
+document.getElementById('promoInput').addEventListener('input', function() {
+    this.value = this.value.toUpperCase();
+});
+
 document.querySelector('form').addEventListener('submit', function() {
     const btn = document.getElementById('signupBtn');
     btn.classList.add('loading');
