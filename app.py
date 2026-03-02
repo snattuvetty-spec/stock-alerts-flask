@@ -423,7 +423,8 @@ def signup():
                         'email': email,
                         'name': name,
                         'trial_ends': trial_ends,
-                        'premium': False
+                        'premium': False,
+                        'promo_code': promo_applied if promo_applied else None
                     }).execute()
 
                     # Update promo code usage count
@@ -1653,7 +1654,7 @@ def admin_export():
         ws.title = 'Users'
 
         # Header row
-        headers = ['Username', 'User Type', 'Plan', 'Expiry / Renewal Date', 'Email', 'Last Login (AEST)', 'Last Logout (AEST)']
+        headers = ['Username', 'User Type', 'Plan', 'Expiry / Renewal Date', 'Email', 'Promo Code', 'Last Login (AEST)', 'Last Logout (AEST)']
         header_fill = PatternFill('solid', start_color='2E86AB')
         header_font = Font(bold=True, color='FFFFFF', name='Arial', size=11)
 
@@ -1666,7 +1667,7 @@ def admin_export():
         ws.row_dimensions[1].height = 22
 
         # Column widths
-        col_widths = [20, 20, 18, 25, 35, 22, 22]
+        col_widths = [20, 20, 18, 25, 35, 25, 22, 22]
         for i, width in enumerate(col_widths, 1):
             ws.column_dimensions[ws.cell(row=1, column=i).column_letter].width = width
 
@@ -1726,7 +1727,7 @@ def admin_export():
                 if not val: return ''
                 return str(val)[:16].replace('T', ' ')
             row_data = [u.get('username',''), user_type, plan_label, expiry_label, u.get('email',''),
-                        fmt_dt(u.get('last_login','')), fmt_dt(u.get('last_logout',''))]
+                        u.get('promo_code') or '—', fmt_dt(u.get('last_login','')), fmt_dt(u.get('last_logout',''))]
             for col_idx, value in enumerate(row_data, 1):
                 cell = ws.cell(row=row_idx, column=col_idx, value=value)
                 cell.fill = row_fill
