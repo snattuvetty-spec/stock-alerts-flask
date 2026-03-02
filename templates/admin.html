@@ -148,33 +148,24 @@
     {% if promo_codes %}
     <div style="overflow-x:auto;">
     <table style="width:100%;font-size:13px;border-collapse:collapse;">
-      <thead style="position:sticky;top:0;z-index:1;">
-        <tr style="background:#f8fafc;">
-          <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Code</th>
-          <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Trial Days</th>
-          <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Uses</th>
-          <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Max Uses</th>
-          <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Status</th>
-          <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Description</th>
-        </tr>
-      </thead>
+      <thead style="position:sticky;top:0;z-index:1;"><tr style="background:#f8fafc;">
+        <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Code</th>
+        <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Trial Days</th>
+        <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Uses</th>
+        <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Max Uses</th>
+        <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Status</th>
+        <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Description</th>
+      </tr></thead>
       <tbody>
         {% for p in promo_codes %}
         <tr style="border-top:1px solid #e5e7eb;">
           <td style="padding:8px;font-weight:700;font-family:monospace;color:#6c63ff;">{{ p.code }}</td>
-          <td style="padding:8px;">
-            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;">
-              {{ p.trial_days }} days
-            </span>
-          </td>
+          <td style="padding:8px;"><span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;">{{ p.trial_days }} days</span></td>
           <td style="padding:8px;font-weight:700;color:#2E86AB;">{{ p.uses_count }}</td>
           <td style="padding:8px;color:#6b7280;">{{ p.max_uses if p.max_uses else '∞ Unlimited' }}</td>
           <td style="padding:8px;">
-            {% if p.active %}
-            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;">Active</span>
-            {% else %}
-            <span style="background:#fde8e8;color:#c0392b;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;">Inactive</span>
-            {% endif %}
+            {% if p.active %}<span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;">Active</span>
+            {% else %}<span style="background:#fde8e8;color:#c0392b;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;">Inactive</span>{% endif %}
           </td>
           <td style="padding:8px;color:#6b7280;font-size:12px;">{{ p.description or '—' }}</td>
         </tr>
@@ -182,8 +173,46 @@
       </tbody>
     </table>
     </div>
+    {% else %}<p style="color:#9ca3af;font-size:13px;">No promo codes yet</p>{% endif %}
+  </div>
+</div>
+
+<!-- ============ LOGIN STATS ============ -->
+<div class="card" style="margin-bottom:28px;">
+  <div class="card-body">
+    <h3 style="font-size:15px;margin-bottom:16px;">📊 User Login Activity</h3>
+    {% if login_stats %}
+    <div style="overflow-x:auto;overflow-y:auto;max-height:350px;">
+    <table style="width:100%;font-size:13px;border-collapse:collapse;">
+      <thead style="position:sticky;top:0;z-index:1;"><tr style="background:#f8fafc;">
+        <th style="padding:8px;text-align:left;color:#6b7280;font-weight:600;">Username</th>
+        <th style="padding:8px;text-align:center;color:#6b7280;font-weight:600;">Today</th>
+        <th style="padding:8px;text-align:center;color:#6b7280;font-weight:600;">This Month</th>
+        <th style="padding:8px;text-align:center;color:#6b7280;font-weight:600;">Last 30 Days</th>
+        <th style="padding:8px;text-align:center;color:#6b7280;font-weight:600;">Total</th>
+        <th style="padding:8px;text-align:center;color:#6b7280;font-weight:600;">Avg/Day</th>
+      </tr></thead>
+      <tbody>
+        {% for uname, stats in login_stats.items()|sort(attribute='1.total', reverse=True) %}
+        <tr style="border-top:1px solid #e5e7eb;">
+          <td style="padding:8px;font-weight:600;">{{ uname }}</td>
+          <td style="padding:8px;text-align:center;">
+            {% if stats.today > 0 %}<span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:10px;font-size:12px;font-weight:600;">{{ stats.today }}</span>
+            {% else %}<span style="color:#9ca3af;">—</span>{% endif %}
+          </td>
+          <td style="padding:8px;text-align:center;color:#374151;">{{ stats.this_month }}</td>
+          <td style="padding:8px;text-align:center;color:#374151;">{{ stats.last_30 }}</td>
+          <td style="padding:8px;text-align:center;font-weight:700;color:#2E86AB;">{{ stats.total }}</td>
+          <td style="padding:8px;text-align:center;">
+            <span style="background:#e3f2fd;color:#1976d2;padding:2px 8px;border-radius:10px;font-size:12px;font-weight:600;">{{ stats.avg_daily }}/day</span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
     {% else %}
-    <p style="color:#9ca3af;font-size:13px;">No promo codes yet</p>
+    <p style="color:#9ca3af;font-size:13px;">No login history yet — data will appear after users log in</p>
     {% endif %}
   </div>
 </div>

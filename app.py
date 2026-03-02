@@ -355,6 +355,14 @@ def login():
                         session['premium'] = user.get('premium', False)
                         session['trial_ends'] = user.get('trial_ends', '')
                         session['session_token'] = token
+                        # Log login event to history
+                        try:
+                            supabase.table('login_history').insert({
+                                'username': user['username'],
+                                'logged_in_at': datetime.now(ZoneInfo('Australia/Brisbane')).strftime('%Y-%m-%dT%H:%M:%S')
+                            }).execute()
+                        except Exception as le:
+                            print(f"Login history log error: {str(le)}")
                         # Redirect admin to admin page
                         if user['username'] == 'admin':
                             return redirect(url_for('admin'))
@@ -1612,6 +1620,42 @@ def admin():
         # Promo code stats
         promo_codes = supabase.table('promo_codes').select('*').order('uses_count', desc=True).execute().data or []
 
+        # Login stats from login_history
+        from datetime import date, timedelta as td
+        today_str = date.today().isoformat()
+        thirty_days_ago = (date.today() - td(days=30)).isoformat()
+        this_month = date.today().strftime('%Y-%m')
+
+        login_history_all = supabase.table('login_history').select('*').execute().data or []
+
+        # Build per-user stats
+        login_stats = {}
+        for entry in login_history_all:
+            uname = entry.get('username', '')
+            ts = entry.get('logged_in_at', '')
+            if not uname or not ts:
+                continue
+            if uname not in login_stats:
+                login_stats[uname] = {'today': 0, 'last_30': 0, 'this_month': 0, 'total': 0, 'dates': set()}
+            login_stats[uname]['total'] += 1
+            login_stats[uname]['dates'].add(ts[:10])
+            if ts[:10] == today_str:
+                login_stats[uname]['today'] += 1
+            if ts[:10] >= thirty_days_ago:
+                login_stats[uname]['last_30'] += 1
+            if ts[:7] == this_month:
+                login_stats[uname]['this_month'] += 1
+
+        # Calculate avg daily logins (total / days since first login)
+        for uname, stats in login_stats.items():
+            dates = stats.pop('dates')
+            if dates:
+                first_date = min(dates)
+                days_tracked = max(1, (date.today() - date.fromisoformat(first_date)).days + 1)
+                stats['avg_daily'] = round(stats['total'] / days_tracked, 1)
+            else:
+                stats['avg_daily'] = 0
+
         return render_template('admin.html',
             total_users=total_users,
             premium_count=len(premium_users),
@@ -1627,6 +1671,7 @@ def admin():
             trial_users=trial_users,
             expired_users=expired_users,
             promo_codes=promo_codes,
+            login_stats=login_stats,
         )
     except Exception as e:
         print(f"Admin error: {str(e)}")
@@ -1767,6 +1812,70 @@ def admin_export():
         summary_row = len(all_users) + 3
         ws.cell(row=summary_row, column=1, value=f'Total Users: {len(all_users)}').font = Font(bold=True, name='Arial')
         ws.cell(row=summary_row, column=2, value=f'Generated: {now.strftime("%d %b %Y %H:%M")}').font = Font(name='Arial', color='888888')
+
+        # ── TAB 2: Login Activity ──
+        from datetime import date, timedelta as td
+        ws2 = wb.create_sheet(title='Login Activity')
+        today_str = date.today().isoformat()
+        thirty_days_ago = (date.today() - td(days=30)).isoformat()
+        this_month = date.today().strftime('%Y-%m')
+
+        login_history_all = supabase.table('login_history').select('*').execute().data or []
+
+        # Build per-user stats
+        login_stats = {}
+        for entry in login_history_all:
+            uname = entry.get('username', '')
+            ts = entry.get('logged_in_at', '')
+            if not uname or not ts: continue
+            if uname not in login_stats:
+                login_stats[uname] = {'today': 0, 'last_30': 0, 'this_month': 0, 'total': 0, 'dates': set()}
+            login_stats[uname]['total'] += 1
+            login_stats[uname]['dates'].add(ts[:10])
+            if ts[:10] == today_str: login_stats[uname]['today'] += 1
+            if ts[:10] >= thirty_days_ago: login_stats[uname]['last_30'] += 1
+            if ts[:7] == this_month: login_stats[uname]['this_month'] += 1
+
+        # Headers for tab 2
+        headers2 = ['Username', 'Logins Today', 'Logins This Month', 'Logins Last 30 Days', 'Total Logins', 'Avg Logins/Day']
+        header_fill2 = PatternFill('solid', start_color='1B4F72')
+        for col, header in enumerate(headers2, 1):
+            cell = ws2.cell(row=1, column=col, value=header)
+            cell.font = Font(bold=True, color='FFFFFF', name='Arial', size=11)
+            cell.fill = header_fill2
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+        ws2.row_dimensions[1].height = 22
+        col_widths2 = [22, 18, 22, 24, 16, 18]
+        for i, width in enumerate(col_widths2, 1):
+            ws2.column_dimensions[ws2.cell(row=1, column=i).column_letter].width = width
+
+        # Data rows sorted by total logins desc
+        sorted_stats = sorted(login_stats.items(), key=lambda x: x[1]['total'], reverse=True)
+        for row_idx, (uname, stats) in enumerate(sorted_stats, 2):
+            dates = stats.pop('dates') if 'dates' in stats else set()
+            if dates:
+                first_date = min(dates)
+                days_tracked = max(1, (date.today() - date.fromisoformat(first_date)).days + 1)
+                avg_daily = round(stats['total'] / days_tracked, 1)
+            else:
+                avg_daily = 0
+
+            row_fill2 = PatternFill('solid', start_color='D6EAF8') if row_idx % 2 == 0 else PatternFill('solid', start_color='FFFFFF')
+            row_data2 = [uname, stats['today'], stats['this_month'], stats['last_30'], stats['total'], avg_daily]
+            for col_idx, value in enumerate(row_data2, 1):
+                cell = ws2.cell(row=row_idx, column=col_idx, value=value)
+                cell.fill = row_fill2
+                cell.font = Font(name='Arial', size=10)
+                cell.alignment = Alignment(horizontal='center' if col_idx > 1 else 'left', vertical='center')
+                if col_idx == 1:
+                    cell.font = Font(name='Arial', size=10, bold=True)
+                if col_idx == 5:
+                    cell.font = Font(name='Arial', size=10, bold=True, color='1A5276')
+
+        # Summary row tab 2
+        summary_row2 = len(sorted_stats) + 3
+        ws2.cell(row=summary_row2, column=1, value=f'Total Users Tracked: {len(sorted_stats)}').font = Font(bold=True, name='Arial')
+        ws2.cell(row=summary_row2, column=2, value=f'Generated: {now.strftime("%d %b %Y %H:%M")}').font = Font(name='Arial', color='888888')
 
         # Save to bytes
         output = io.BytesIO()
