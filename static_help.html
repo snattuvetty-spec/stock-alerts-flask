@@ -244,6 +244,17 @@
 </style>
 </head>
 <body>
+<!-- Sticky close / back button -->
+<div style="position:fixed;top:12px;right:12px;z-index:9999;">
+    <button onclick="window.history.length > 1 ? window.history.back() : window.close()"
+        style="background:#040d1a;color:#00c6ff;border:1.5px solid rgba(0,198,255,0.4);
+               padding:8px 16px;border-radius:20px;font-size:13px;font-weight:700;
+               cursor:pointer;backdrop-filter:blur(10px);
+               box-shadow:0 2px 12px rgba(0,0,0,0.3);
+               display:flex;align-items:center;gap:6px;">
+        ← Back
+    </button>
+</div>
 
 <!-- COVER -->
 <div class="cover">
