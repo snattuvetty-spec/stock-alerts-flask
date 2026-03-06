@@ -3,6 +3,23 @@
 {% block content %}
 
 <style>
+/* ── Animated money icon ── */
+.forex-title-icon {
+    display: inline-block;
+    animation: flicker 1.8s ease-in-out infinite;
+    transform-origin: center bottom;
+    margin-right: 6px;
+}
+@keyframes flicker {
+    0%   { transform: rotate(-8deg) scale(1.0); }
+    15%  { transform: rotate( 8deg) scale(1.05); }
+    30%  { transform: rotate(-6deg) scale(1.0); }
+    45%  { transform: rotate( 6deg) scale(1.05); }
+    60%  { transform: rotate(-3deg) scale(1.0); }
+    75%  { transform: rotate( 3deg) scale(1.02); }
+    100% { transform: rotate( 0deg) scale(1.0); }
+}
+
 /* ── Layout ── */
 .forex-grid {
     display: grid;
@@ -10,16 +27,30 @@
     gap: 14px;
     margin-bottom: 24px;
 }
+
 /* ── Rate Cards ── */
 .forex-card {
     background: rgba(255,255,255,0.04);
     border: 1px solid rgba(0,198,255,0.12);
     border-radius: 12px;
     padding: 16px;
-    transition: border-color 0.2s, background 0.2s;
+    transition: border-color 0.2s, background 0.2s, opacity 0.2s;
     position: relative;
+    cursor: default;
 }
 .forex-card:hover { border-color: rgba(0,198,255,0.3); background: rgba(0,198,255,0.05); }
+.forex-card.dragging { opacity: 0.4; border-color: rgba(0,198,255,0.5); cursor: grabbing; }
+.forex-card.drag-over { border-color: #00c6ff; background: rgba(0,198,255,0.1); }
+
+.drag-handle {
+    position: absolute; top: 10px; right: 10px;
+    color: rgba(255,255,255,0.2); font-size: 14px; cursor: grab;
+    line-height: 1; user-select: none; padding: 2px 4px;
+    transition: color 0.2s;
+}
+.drag-handle:hover { color: rgba(0,198,255,0.6); }
+.drag-handle:active { cursor: grabbing; }
+
 .forex-flag {
     font-size: 10px; font-weight: 800; letter-spacing: 1px;
     color: #00c6ff; background: rgba(0,198,255,0.1);
@@ -49,7 +80,7 @@
 }
 @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 
-.card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; }
+.card-footer { display: flex; align-items: center; justify-content: flex-end; margin-top: 12px; }
 .btn-set-alert {
     background: rgba(0,198,255,0.1); border: 1px solid rgba(0,198,255,0.25);
     color: #00c6ff; font-size: 11px; font-weight: 700;
@@ -96,6 +127,10 @@
     font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
     color: rgba(255,255,255,0.3); text-transform: uppercase; margin-bottom: 12px;
 }
+.section-hint {
+    font-size: 11px; color: rgba(255,255,255,0.2);
+    margin-bottom: 12px; margin-top: -8px;
+}
 
 /* ── Modal ── */
 .modal-overlay {
@@ -141,28 +176,40 @@
 .btn-cancel:hover { background: rgba(255,255,255,0.1); }
 .modal-error { font-size: 12px; color: #f87171; margin-top: 8px; display: none; }
 
-/* ── Forex Alerts Section ── */
+/* ── Forex Alerts — single row, horizontal scroll ── */
 .alerts-section {
     background: rgba(255,255,255,0.03);
     border: 1px solid rgba(0,198,255,0.1);
-    border-radius: 12px; padding: 20px; margin-top: 8px;
+    border-radius: 12px; padding: 16px; margin-top: 8px;
+    overflow-x: auto;
 }
-.forex-alert-row {
-    display: flex; align-items: center; gap: 12px;
-    padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
-    flex-wrap: wrap;
+.alerts-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 560px;
+    white-space: nowrap;
 }
-.forex-alert-row:last-child { border-bottom: none; padding-bottom: 0; }
+.alerts-table th {
+    font-size: 10px; font-weight: 700; letter-spacing: 1px;
+    color: rgba(255,255,255,0.25); text-transform: uppercase;
+    padding: 0 12px 10px 0; text-align: left;
+}
+.alerts-table td {
+    padding: 10px 12px 10px 0;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    vertical-align: middle;
+}
 .fa-symbol {
-    font-family: 'DM Mono', monospace; font-size: 14px;
-    font-weight: 700; color: #00c6ff; min-width: 110px;
+    font-family: 'DM Mono', monospace; font-size: 13px;
+    font-weight: 700; color: #00c6ff;
 }
 .fa-direction {
     font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 20px;
+    display: inline-block;
 }
 .fa-direction.above { background: rgba(74,222,128,0.15); color: #4ade80; }
 .fa-direction.below { background: rgba(248,113,113,0.15); color: #f87171; }
-.fa-target { font-family: 'DM Mono', monospace; font-size: 14px; color: #fff; flex: 1; }
+.fa-target { font-family: 'DM Mono', monospace; font-size: 13px; color: #fff; }
 .fa-current { font-size: 12px; color: rgba(255,255,255,0.35); }
 .fa-delete {
     background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.2);
@@ -173,7 +220,7 @@
 .fa-toggle {
     background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
     color: rgba(255,255,255,0.4); font-size: 11px; padding: 4px 10px;
-    border-radius: 6px; cursor: pointer; font-weight: 700;
+    border-radius: 6px; cursor: pointer; font-weight: 700; margin-right: 6px;
 }
 .fa-toggle.on { background: rgba(74,222,128,0.1); border-color: rgba(74,222,128,0.2); color: #4ade80; }
 .fa-toggle:hover { opacity: 0.8; }
@@ -183,7 +230,9 @@
 }
 </style>
 
-<div class="page-title">💱 Forex Tracker</div>
+<div class="page-title">
+    <span class="forex-title-icon">💵</span> Forex Tracker
+</div>
 <p style="color:rgba(255,255,255,0.45);font-size:13px;margin:-8px 0 20px;">Live exchange rates — powered by Yahoo Finance</p>
 
 <!-- Custom Lookup -->
@@ -201,7 +250,8 @@
 
 <!-- Major Pairs -->
 <div class="section-label">Major Pairs</div>
-<div class="forex-grid">
+<div class="section-hint">⠿ Drag cards to reorder</div>
+<div class="forex-grid" id="grid-major" data-group="major">
     {% set major_pairs = [
         ('AUDUSD=X', 'AUD/USD', 'AUD', 'Australian Dollar / US Dollar'),
         ('EURUSD=X', 'EUR/USD', 'EUR', 'Euro / US Dollar'),
@@ -211,7 +261,8 @@
         ('USDCHF=X', 'USD/CHF', 'CHF', 'US Dollar / Swiss Franc'),
     ] %}
     {% for ticker, label, badge, name in major_pairs %}
-    <div class="forex-card">
+    <div class="forex-card" draggable="true" data-ticker="{{ ticker }}">
+        <div class="drag-handle" title="Drag to reorder">⠿</div>
         <div class="forex-flag">{{ badge }}</div>
         <div class="forex-pair">{{ label }}</div>
         <div class="forex-name">{{ name }}</div>
@@ -219,7 +270,6 @@
         <div class="forex-price" id="price-{{ ticker | replace('=','_') }}" style="display:none;"></div>
         <div id="change-{{ ticker | replace('=','_') }}"></div>
         <div class="card-footer">
-            <span></span>
             <button class="btn-set-alert" onclick="openModal('{{ ticker }}', '{{ label }}')">🔔 Set Alert</button>
         </div>
     </div>
@@ -228,7 +278,8 @@
 
 <!-- AUD Cross Rates -->
 <div class="section-label" style="margin-top:8px;">AUD Cross Rates</div>
-<div class="forex-grid">
+<div class="section-hint">⠿ Drag cards to reorder</div>
+<div class="forex-grid" id="grid-aud" data-group="aud">
     {% set aud_pairs = [
         ('AUDNZD=X', 'AUD/NZD', 'NZD', 'Australian Dollar / NZ Dollar'),
         ('AUDSGD=X', 'AUD/SGD', 'SGD', 'Australian Dollar / Singapore Dollar'),
@@ -236,7 +287,8 @@
         ('AUDGBP=X', 'AUD/GBP', 'GBP', 'Australian Dollar / British Pound'),
     ] %}
     {% for ticker, label, badge, name in aud_pairs %}
-    <div class="forex-card">
+    <div class="forex-card" draggable="true" data-ticker="{{ ticker }}">
+        <div class="drag-handle" title="Drag to reorder">⠿</div>
         <div class="forex-flag">{{ badge }}</div>
         <div class="forex-pair">{{ label }}</div>
         <div class="forex-name">{{ name }}</div>
@@ -244,7 +296,6 @@
         <div class="forex-price" id="price-{{ ticker | replace('=','_') }}" style="display:none;"></div>
         <div id="change-{{ ticker | replace('=','_') }}"></div>
         <div class="card-footer">
-            <span></span>
             <button class="btn-set-alert" onclick="openModal('{{ ticker }}', '{{ label }}')">🔔 Set Alert</button>
         </div>
     </div>
@@ -253,7 +304,8 @@
 
 <!-- INR Pairs -->
 <div class="section-label" style="margin-top:8px;">INR Rates</div>
-<div class="forex-grid">
+<div class="section-hint">⠿ Drag cards to reorder</div>
+<div class="forex-grid" id="grid-inr" data-group="inr">
     {% set inr_pairs = [
         ('USDINR=X', 'USD/INR', 'USD', 'US Dollar / Indian Rupee'),
         ('EURINR=X', 'EUR/INR', 'EUR', 'Euro / Indian Rupee'),
@@ -261,7 +313,8 @@
         ('SGDINR=X', 'SGD/INR', 'SGD', 'Singapore Dollar / Indian Rupee'),
     ] %}
     {% for ticker, label, badge, name in inr_pairs %}
-    <div class="forex-card">
+    <div class="forex-card" draggable="true" data-ticker="{{ ticker }}">
+        <div class="drag-handle" title="Drag to reorder">⠿</div>
         <div class="forex-flag">{{ badge }}</div>
         <div class="forex-pair">{{ label }}</div>
         <div class="forex-name">{{ name }}</div>
@@ -269,7 +322,6 @@
         <div class="forex-price" id="price-{{ ticker | replace('=','_') }}" style="display:none;"></div>
         <div id="change-{{ ticker | replace('=','_') }}"></div>
         <div class="card-footer">
-            <span></span>
             <button class="btn-set-alert" onclick="openModal('{{ ticker }}', '{{ label }}')">🔔 Set Alert</button>
         </div>
     </div>
@@ -281,20 +333,38 @@
     <div class="section-label">My Forex Alerts</div>
     <div class="alerts-section" id="forexAlertsSection">
         {% if forex_alerts %}
+        <table class="alerts-table">
+            <thead>
+                <tr>
+                    <th>Pair</th>
+                    <th>Direction</th>
+                    <th>Target</th>
+                    <th>Current</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="alertsTableBody">
             {% for alert in forex_alerts %}
-            <div class="forex-alert-row" id="alertrow-{{ alert.id }}">
-                <div class="fa-symbol">{{ alert.symbol }}</div>
-                <span class="fa-direction {{ alert.type }}">{{ '▲ Above' if alert.type == 'above' else '▼ Below' }}</span>
-                <div class="fa-target">{{ alert.target }}</div>
-                <div class="fa-current" id="fa-live-{{ alert.id }}">—</div>
-                <button class="fa-toggle {{ 'on' if alert.enabled else '' }}"
-                        id="toggle-{{ alert.id }}"
-                        onclick="toggleAlert('{{ alert.id }}', {{ 'true' if alert.enabled else 'false' }})">
-                    {{ '● ON' if alert.enabled else '○ OFF' }}
-                </button>
-                <button class="fa-delete" onclick="deleteAlert('{{ alert.id }}')">✕ Delete</button>
-            </div>
+            <tr id="alertrow-{{ alert.id }}">
+                <td><div class="fa-symbol">{{ alert.symbol }}</div></td>
+                <td><span class="fa-direction {{ alert.type }}">{{ '▲ Above' if alert.type == 'above' else '▼ Below' }}</span></td>
+                <td><div class="fa-target">{{ alert.target }}</div></td>
+                <td><div class="fa-current" id="fa-live-{{ alert.id }}">—</div></td>
+                <td>
+                    <button class="fa-toggle {{ 'on' if alert.enabled else '' }}"
+                            id="toggle-{{ alert.id }}"
+                            onclick="toggleAlert('{{ alert.id }}', {{ 'true' if alert.enabled else 'false' }})">
+                        {{ '● ON' if alert.enabled else '○ OFF' }}
+                    </button>
+                </td>
+                <td>
+                    <button class="fa-delete" onclick="deleteAlert('{{ alert.id }}')">✕ Delete</button>
+                </td>
+            </tr>
             {% endfor %}
+            </tbody>
+        </table>
         {% else %}
             <div class="empty-alerts" id="emptyMsg">
                 🔔 No forex alerts yet — click <strong>"Set Alert"</strong> on any rate card above
@@ -341,6 +411,7 @@
 </div>
 
 <script>
+// ── Tickers & live price cache ──
 const allTickers = [
     'AUDUSD=X','EURUSD=X','GBPUSD=X','USDJPY=X','USDCAD=X','USDCHF=X',
     'AUDNZD=X','AUDSGD=X','AUDINR=X','AUDGBP=X',
@@ -350,6 +421,7 @@ const livePrices = {};
 
 function safeId(ticker) { return ticker.replace(/=/g, '_'); }
 
+// ── Fetch & display rates ──
 async function fetchForex(ticker) {
     const id = safeId(ticker);
     try {
@@ -371,12 +443,12 @@ async function fetchForex(ticker) {
                 const cls = chg > 0 ? 'up' : chg < 0 ? 'down' : 'flat';
                 changeEl.innerHTML = `<span class="forex-change ${cls}">${chg >= 0 ? '+' : ''}${chg.toFixed(3)}%</span>`;
             }
-            // Update live price in alert rows
-            document.querySelectorAll('.forex-alert-row').forEach(row => {
-                const sym = row.querySelector('.fa-symbol').textContent.trim();
-                if (sym === ticker) {
+            // Update live column in alerts table
+            document.querySelectorAll('tr[id^="alertrow-"]').forEach(row => {
+                const sym = row.querySelector('.fa-symbol');
+                if (sym && sym.textContent.trim() === ticker) {
                     const liveEl = row.querySelector('.fa-current');
-                    if (liveEl) liveEl.textContent = `Now: ${fmt}`;
+                    if (liveEl) liveEl.textContent = fmt;
                 }
             });
         } else {
@@ -391,10 +463,9 @@ async function fetchForex(ticker) {
         if (p) { p.textContent = '—'; p.style.display = 'block'; }
     }
 }
-
 allTickers.forEach(t => fetchForex(t));
 
-// Custom lookup
+// ── Custom lookup ──
 async function lookupCustom() {
     const input  = document.getElementById('customPair');
     const result = document.getElementById('lookupResult');
@@ -430,7 +501,70 @@ async function lookupCustom() {
 }
 document.getElementById('customPair').addEventListener('keydown', e => { if (e.key === 'Enter') lookupCustom(); });
 
-// Modal
+// ── Drag to reorder ──
+let dragSrc = null;
+
+function initDrag(grid) {
+    grid.querySelectorAll('.forex-card').forEach(card => {
+        card.addEventListener('dragstart', function(e) {
+            dragSrc = this;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        });
+        card.addEventListener('dragend', function() {
+            this.classList.remove('dragging');
+            grid.querySelectorAll('.forex-card').forEach(c => c.classList.remove('drag-over'));
+            saveOrder(grid);
+        });
+        card.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            if (this !== dragSrc) {
+                grid.querySelectorAll('.forex-card').forEach(c => c.classList.remove('drag-over'));
+                this.classList.add('drag-over');
+            }
+        });
+        card.addEventListener('drop', function(e) {
+            e.preventDefault();
+            if (dragSrc && this !== dragSrc) {
+                const cards = [...grid.querySelectorAll('.forex-card')];
+                const srcIdx  = cards.indexOf(dragSrc);
+                const destIdx = cards.indexOf(this);
+                if (srcIdx < destIdx) {
+                    grid.insertBefore(dragSrc, this.nextSibling);
+                } else {
+                    grid.insertBefore(dragSrc, this);
+                }
+            }
+        });
+    });
+}
+
+function saveOrder(grid) {
+    const group  = grid.dataset.group;
+    const order  = [...grid.querySelectorAll('.forex-card')].map(c => c.dataset.ticker);
+    localStorage.setItem(`forex-order-${group}`, JSON.stringify(order));
+}
+
+function restoreOrder(grid) {
+    const group = grid.dataset.group;
+    const saved = localStorage.getItem(`forex-order-${group}`);
+    if (!saved) return;
+    try {
+        const order = JSON.parse(saved);
+        order.forEach(ticker => {
+            const card = grid.querySelector(`[data-ticker="${ticker}"]`);
+            if (card) grid.appendChild(card);
+        });
+    } catch(e) {}
+}
+
+['grid-major','grid-aud','grid-inr'].forEach(id => {
+    const grid = document.getElementById(id);
+    if (grid) { restoreOrder(grid); initDrag(grid); }
+});
+
+// ── Modal ──
 function openModal(ticker, label) {
     document.getElementById('modalSymbol').value  = ticker;
     document.getElementById('modalLabel').value   = label;
@@ -474,11 +608,8 @@ async function saveAlert() {
         fd.append('label', label);
         const res  = await fetch('/forex/add_alert', { method: 'POST', body: fd });
         const data = await res.json();
-        if (data.success) {
-            closeModal();
-            // Reload page to get proper DB id for new alert
-            location.reload();
-        } else {
+        if (data.success) { closeModal(); location.reload(); }
+        else {
             errEl.textContent = '❌ ' + (data.error || 'Could not save alert.');
             errEl.style.display = 'block';
         }
@@ -497,7 +628,8 @@ async function deleteAlert(alertId) {
         if (data.success) {
             const row = document.getElementById(`alertrow-${alertId}`);
             if (row) row.remove();
-            if (document.querySelectorAll('.forex-alert-row').length === 0) {
+            const tbody = document.getElementById('alertsTableBody');
+            if (tbody && tbody.querySelectorAll('tr').length === 0) {
                 document.getElementById('forexAlertsSection').innerHTML =
                     '<div class="empty-alerts" id="emptyMsg">🔔 No forex alerts yet — click <strong>"Set Alert"</strong> on any rate card above</div>';
             }
