@@ -343,7 +343,8 @@ def login():
             result = supabase.table('users').select('*').execute()
             for user in result.data:
                 if user['username'].lower() == username.lower():
-                    if verify_password(password, user['password_hash']):
+                    pw_ok = verify_password(password, user['password_hash'])
+                    if pw_ok:
                         # Generate unique session token for single-session enforcement
                         token = ''.join(random.choices(string.ascii_letters + string.digits, k=32))
                         supabase.table('users').update({
@@ -838,7 +839,21 @@ def get_price(symbol):
     import yfinance as yf
     symbol = symbol.upper()
     results = []
-    
+
+    # ── Forex shortcut: tickers ending in =X go direct, no suffix appending ──
+    if '=X' in symbol:
+        try:
+            ticker = yf.Ticker(symbol)
+            data = ticker.history(period='1d', timeout=10)
+            if not data.empty:
+                price = float(data['Close'].iloc[-1])
+                prev  = float(data['Open'].iloc[-1])
+                change_pct = ((price - prev) / prev) * 100
+                return jsonify({'price': price, 'change_pct': change_pct, 'results': []})
+        except Exception as e:
+            print(f"Forex fetch error for {symbol}: {str(e)}")
+        return jsonify({'price': None, 'change_pct': None, 'results': []})
+
     # Check US market
     try:
         ticker_us = yf.Ticker(symbol)
@@ -1891,6 +1906,51 @@ def admin_export():
     except Exception as e:
         print(f"Export error: {str(e)}")
         return f"Export error: {str(e)}", 500
+
+@app.route('/forex')
+@login_required
+def forex():
+    username = session['username']
+    all_alerts = supabase.table('alerts').select('*').eq('username', username).execute().data or []
+    forex_alerts = [a for a in all_alerts if '=X' in a.get('symbol', '')]
+    return render_template('forex.html', forex_alerts=forex_alerts)
+
+@app.route('/forex/add_alert', methods=['POST'])
+@login_required
+def forex_add_alert():
+    username = session['username']
+    try:
+        symbol     = request.form.get('symbol', '').upper().strip()
+        target     = float(request.form.get('target', ''))
+        alert_type = request.form.get('alert_type', 'above')
+        if not symbol or not target:
+            return jsonify({'success': False, 'error': 'Missing fields'}), 400
+        supabase.table('alerts').insert({
+            'username': username,
+            'symbol': symbol,
+            'target': target,
+            'type': alert_type,
+            'enabled': True
+        }).execute()
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/forex/delete_alert/<alert_id>', methods=['POST'])
+@login_required
+def forex_delete_alert(alert_id):
+    username = session['username']
+    supabase.table('alerts').delete().eq('id', alert_id).eq('username', username).execute()
+    return jsonify({'success': True})
+
+@app.route('/forex/toggle_alert/<alert_id>', methods=['POST'])
+@login_required
+def forex_toggle_alert(alert_id):
+    username = session['username']
+    data = request.get_json()
+    enabled = data.get('enabled', True)
+    supabase.table('alerts').update({'enabled': enabled}).eq('id', alert_id).eq('username', username).execute()
+    return jsonify({'success': True})
 
 @app.route('/help')
 def help_page():
