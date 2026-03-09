@@ -281,11 +281,12 @@
 
 <div class="forex-grid" id="grid-major" data-group="major">
     {% for pair in user_pairs %}
-    <div class="forex-card" draggable="true" data-ticker="{{ pair.ticker }}" style="position:relative;">
+    <div class="forex-card" draggable="true" data-ticker="{{ pair.ticker }}">
         <!-- Top row: drag handle left, remove button right -->
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
             <div class="drag-handle" title="Drag to reorder" style="position:static;font-size:12px;color:rgba(255,255,255,0.2);">⠿</div>
-            <button onclick="removePair('{{ pair.ticker }}', this)"
+            <button class="remove-pair-btn"
+                    data-ticker="{{ pair.ticker }}"
                     title="Remove from My Pairs"
                     style="background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.2);
                            color:#f87171;width:22px;height:22px;border-radius:5px;font-size:12px;cursor:pointer;
@@ -812,7 +813,7 @@ async function confirmAddPair() {
         card.innerHTML = `
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
                 <div class="drag-handle" title="Drag to reorder" style="position:static;font-size:12px;color:rgba(255,255,255,0.2);">⠿</div>
-                <button onclick="removePair('${ticker}', this)" title="Remove from My Pairs"
+                <button class="remove-pair-btn" data-ticker="${ticker}" title="Remove from My Pairs"
                         style="background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.2);
                                color:#f87171;width:22px;height:22px;border-radius:5px;font-size:12px;cursor:pointer;
                                display:flex;align-items:center;justify-content:center;padding:0;font-weight:700;">✕</button>
@@ -838,8 +839,17 @@ async function confirmAddPair() {
     btn.textContent = '➕ Add Pair'; btn.disabled = false;
 }
 
+// ── Remove pair buttons — use event delegation to avoid drag conflicts ──
+document.getElementById('grid-major').addEventListener('click', function(e) {
+    const btn = e.target.closest('.remove-pair-btn');
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const ticker = btn.dataset.ticker;
+    if (ticker) removePair(ticker, btn);
+});
+
 function removeFixedCard(btnEl) {
-    // For AUD/INR fixed sections — just hide from DOM (session only, reloads restore them)
     const card = btnEl.closest('.forex-card');
     if (!card) return;
     card.style.transition = 'opacity 0.3s, transform 0.3s';
@@ -851,7 +861,6 @@ function removeFixedCard(btnEl) {
 async function removePair(ticker, btnEl) {
     const card = btnEl.closest('.forex-card');
     if (!card) return;
-    // Optimistic UI
     card.style.opacity = '0.4';
     card.style.pointerEvents = 'none';
     try {
@@ -867,11 +876,11 @@ async function removePair(ticker, btnEl) {
             setTimeout(() => card.remove(), 300);
         } else {
             card.style.opacity = '1'; card.style.pointerEvents = '';
-            alert('Could not remove pair. Try again.');
+            alert('Could not save change: ' + (data.error || 'Unknown error.'));
         }
     } catch(e) {
         card.style.opacity = '1'; card.style.pointerEvents = '';
-        alert('Network error. Try again.');
+        alert('Network error removing pair: ' + e.message);
     }
 }
 
