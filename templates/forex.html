@@ -480,7 +480,7 @@
 <script>
 // ── Tickers & live price cache ──
 // Major pairs come from server (user-customisable)
-const userMajorTickers = {{ user_tickers_json }};
+const userMajorTickers = {{ user_tickers_json | safe }};
 const fixedTickers = [
     'AUDNZD=X','AUDSGD=X','AUDINR=X','AUDGBP=X',
     'USDINR=X','EURINR=X','GBPINR=X','SGDINR=X'
