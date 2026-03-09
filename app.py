@@ -1924,29 +1924,33 @@ def admin_export():
 @login_required
 def forex():
     username = session['username']
+    import json as _json
     all_alerts = supabase.table('alerts').select('*').eq('username', username).execute().data or []
     forex_alerts = [a for a in all_alerts if '=X' in a.get('symbol', '')]
 
-    # Load user's custom major pairs — wrapped in try/except in case
-    # the forex_pairs column hasn't been added to Supabase yet
     user_pairs = None
     try:
         settings = supabase.table('user_settings').select('forex_pairs').eq('username', username).execute().data
         if settings and settings[0].get('forex_pairs'):
-            user_pairs = settings[0]['forex_pairs']
+            raw = settings[0]['forex_pairs']
+            # Supabase may return a string or already-parsed list
+            user_pairs = _json.loads(raw) if isinstance(raw, str) else raw
         if not user_pairs:
             user_pairs = [{'ticker': t, 'label': l, 'flag': f, 'name': n} for t, l, f, n in DEFAULT_MAJOR_PAIRS]
+            # Seed defaults — use json.dumps so JSONB column accepts it
             try:
-                supabase.table('user_settings').update({'forex_pairs': user_pairs}).eq('username', username).execute()
-            except:
-                pass
+                supabase.table('user_settings').update(
+                    {'forex_pairs': _json.dumps(user_pairs)}
+                ).eq('username', username).execute()
+                print(f"forex: seeded default pairs for {username}")
+            except Exception as seed_err:
+                print(f"forex: seed error for {username}: {seed_err}")
     except Exception as e:
-        print(f"forex_pairs load error (column may not exist yet): {e}")
+        print(f"forex_pairs load error for {username}: {e}")
         user_pairs = [{'ticker': t, 'label': l, 'flag': f, 'name': n} for t, l, f, n in DEFAULT_MAJOR_PAIRS]
 
-    import json
     default_pairs = [{'ticker': t, 'label': l, 'flag': f, 'name': n} for t, l, f, n in DEFAULT_MAJOR_PAIRS]
-    user_tickers_json = json.dumps([p['ticker'] for p in user_pairs])
+    user_tickers_json = _json.dumps([p['ticker'] for p in user_pairs])
     return render_template('forex.html', forex_alerts=forex_alerts, user_pairs=user_pairs,
                            default_pairs=default_pairs, user_tickers_json=user_tickers_json)
 
@@ -1955,15 +1959,17 @@ def forex():
 def forex_pairs_save():
     """Add or remove a pair from the user's major pairs list."""
     username = session['username']
+    import json as _json
     try:
         data = request.get_json()
-        action = data.get('action')  # 'add' or 'remove'
+        action = data.get('action')
         ticker = data.get('ticker', '').upper().strip()
         if not ticker:
             return jsonify({'success': False, 'error': 'No ticker provided'}), 400
 
         settings = supabase.table('user_settings').select('forex_pairs').eq('username', username).execute().data
-        pairs = settings[0].get('forex_pairs') if settings else None
+        raw = settings[0].get('forex_pairs') if settings else None
+        pairs = _json.loads(raw) if isinstance(raw, str) else raw
         if not pairs:
             pairs = [{'ticker': t, 'label': l, 'flag': f, 'name': n} for t, l, f, n in DEFAULT_MAJOR_PAIRS]
 
@@ -1971,7 +1977,6 @@ def forex_pairs_save():
             pairs = [p for p in pairs if p['ticker'] != ticker]
         elif action == 'add':
             if not any(p['ticker'] == ticker for p in pairs):
-                label = data.get('label', ticker.replace('=X', '').replace('USD', '/USD').replace('EUR', '/EUR'))
                 pairs.append({
                     'ticker': ticker,
                     'label': data.get('label', ticker.replace('=X', '')),
@@ -1979,9 +1984,11 @@ def forex_pairs_save():
                     'name':  data.get('name', ticker.replace('=X', ''))
                 })
 
-        supabase.table('user_settings').update({'forex_pairs': pairs}).eq('username', username).execute()
+        supabase.table('user_settings').update({'forex_pairs': _json.dumps(pairs)}).eq('username', username).execute()
+        print(f"forex_pairs_save OK: {action} {ticker} for {username}, total pairs: {len(pairs)}")
         return jsonify({'success': True, 'pairs': pairs})
     except Exception as e:
+        print(f"forex_pairs_save ERROR for {username}: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/forex/pairs/reset', methods=['POST'])
@@ -1990,10 +1997,13 @@ def forex_pairs_reset():
     """Reset user's major pairs to defaults. Does NOT touch alerts."""
     username = session['username']
     try:
+        import json as _json
         default = [{'ticker': t, 'label': l, 'flag': f, 'name': n} for t, l, f, n in DEFAULT_MAJOR_PAIRS]
-        supabase.table('user_settings').update({'forex_pairs': default}).eq('username', username).execute()
+        supabase.table('user_settings').update({'forex_pairs': _json.dumps(default)}).eq('username', username).execute()
+        print(f"forex_pairs_reset OK for {username}")
         return jsonify({'success': True})
     except Exception as e:
+        print(f"forex_pairs_reset ERROR for {username}: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/forex/add_alert', methods=['POST'])
