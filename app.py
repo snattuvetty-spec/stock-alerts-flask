@@ -1927,18 +1927,28 @@ def forex():
     all_alerts = supabase.table('alerts').select('*').eq('username', username).execute().data or []
     forex_alerts = [a for a in all_alerts if '=X' in a.get('symbol', '')]
 
-    # Load user's custom major pairs (fall back to default)
-    settings = supabase.table('user_settings').select('forex_pairs').eq('username', username).execute().data
+    # Load user's custom major pairs — wrapped in try/except in case
+    # the forex_pairs column hasn't been added to Supabase yet
     user_pairs = None
-    if settings and settings[0].get('forex_pairs'):
-        user_pairs = settings[0]['forex_pairs']
-    if not user_pairs:
+    try:
+        settings = supabase.table('user_settings').select('forex_pairs').eq('username', username).execute().data
+        if settings and settings[0].get('forex_pairs'):
+            user_pairs = settings[0]['forex_pairs']
+        if not user_pairs:
+            user_pairs = [{'ticker': t, 'label': l, 'flag': f, 'name': n} for t, l, f, n in DEFAULT_MAJOR_PAIRS]
+            try:
+                supabase.table('user_settings').update({'forex_pairs': user_pairs}).eq('username', username).execute()
+            except:
+                pass
+    except Exception as e:
+        print(f"forex_pairs load error (column may not exist yet): {e}")
         user_pairs = [{'ticker': t, 'label': l, 'flag': f, 'name': n} for t, l, f, n in DEFAULT_MAJOR_PAIRS]
-        # Save defaults for this user on first visit
-        supabase.table('user_settings').update({'forex_pairs': user_pairs}).eq('username', username).execute()
 
+    import json
+    default_pairs = [{'ticker': t, 'label': l, 'flag': f, 'name': n} for t, l, f, n in DEFAULT_MAJOR_PAIRS]
+    user_tickers_json = json.dumps([p['ticker'] for p in user_pairs])
     return render_template('forex.html', forex_alerts=forex_alerts, user_pairs=user_pairs,
-                           default_pairs=[{'ticker': t, 'label': l, 'flag': f, 'name': n} for t, l, f, n in DEFAULT_MAJOR_PAIRS])
+                           default_pairs=default_pairs, user_tickers_json=user_tickers_json)
 
 @app.route('/forex/pairs/save', methods=['POST'])
 @login_required
