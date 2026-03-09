@@ -3,23 +3,6 @@
 {% block content %}
 
 <style>
-/* ── Animated money icon ── */
-.forex-title-icon {
-    display: inline-block;
-    animation: flicker 1.8s ease-in-out infinite;
-    transform-origin: center bottom;
-    margin-right: 6px;
-}
-@keyframes flicker {
-    0%   { transform: rotate(-8deg) scale(1.0); }
-    15%  { transform: rotate( 8deg) scale(1.05); }
-    30%  { transform: rotate(-6deg) scale(1.0); }
-    45%  { transform: rotate( 6deg) scale(1.05); }
-    60%  { transform: rotate(-3deg) scale(1.0); }
-    75%  { transform: rotate( 3deg) scale(1.02); }
-    100% { transform: rotate( 0deg) scale(1.0); }
-}
-
 /* ── Layout ── */
 .forex-grid {
     display: grid;
@@ -231,7 +214,41 @@
 </style>
 
 <div class="page-title">
-    <span class="forex-title-icon">💵</span> Forex Tracker
+    <svg width="38" height="38" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
+      <style>
+        @keyframes ptBill{0%{transform:translateY(-4px);opacity:0}15%{opacity:1}40%{transform:translateY(0);opacity:1}65%{transform:translateY(0);opacity:1}85%{transform:translateY(3px);opacity:.6}100%{transform:translateY(5px);opacity:0}}
+        @keyframes ptScreen{0%,100%{opacity:.6}50%{opacity:1}}
+        @keyframes ptSlot{0%,100%{filter:drop-shadow(0 0 1px rgba(0,198,255,.3))}40%,60%{filter:drop-shadow(0 0 6px rgba(251,191,36,1))}}
+        @keyframes ptCount{0%{opacity:0;transform:translateY(3px)}20%{opacity:1;transform:translateY(0)}75%{opacity:1}100%{opacity:0;transform:translateY(-3px)}}
+        .ptb{animation:ptBill 2.4s ease-in-out infinite;transform-origin:center 22px}
+        .pts{animation:ptScreen 2.4s ease-in-out infinite}
+        .ptg{animation:ptSlot 2.4s ease-in-out infinite}
+        .ptc{animation:ptCount 2.4s ease-in-out infinite;font-size:5px;fill:#4ade80;font-weight:800;font-family:monospace}
+      </style>
+      <rect x="4" y="3" width="28" height="26" rx="3" fill="#0e2340" stroke="#00c6ff" stroke-width="1.5"/>
+      <rect class="pts" x="7" y="6" width="22" height="11" rx="2" fill="rgba(0,198,255,.15)" stroke="#00c6ff" stroke-width=".8"/>
+      <text class="ptc" x="14" y="14.5">$→¥</text>
+      <line x1="7" y1="10" x2="29" y2="10" stroke="rgba(0,198,255,.15)" stroke-width=".5"/>
+      <line x1="7" y1="13" x2="29" y2="13" stroke="rgba(0,198,255,.15)" stroke-width=".5"/>
+      <rect x="7"  y="20" width="4" height="2.5" rx=".8" fill="rgba(0,198,255,.3)"/>
+      <rect x="13" y="20" width="4" height="2.5" rx=".8" fill="rgba(0,198,255,.3)"/>
+      <rect x="19" y="20" width="4" height="2.5" rx=".8" fill="rgba(0,198,255,.3)"/>
+      <rect x="25" y="20" width="4" height="2.5" rx=".8" fill="rgba(0,198,255,.3)"/>
+      <rect x="7"  y="24" width="4" height="2.5" rx=".8" fill="rgba(0,198,255,.3)"/>
+      <rect x="13" y="24" width="4" height="2.5" rx=".8" fill="rgba(0,198,255,.3)"/>
+      <rect x="19" y="24" width="4" height="2.5" rx=".8" fill="rgba(0,198,255,.3)"/>
+      <rect x="25" y="24" width="4" height="2.5" rx=".8" fill="rgba(74,222,128,.4)"/>
+      <rect x="6" y="17.5" width="10" height="1.5" rx=".75" fill="rgba(0,198,255,.1)" stroke="#00c6ff" stroke-width=".8"/>
+      <rect x="18" y="17" width="11" height="2.5" rx="1.2" fill="rgba(251,191,36,.1)" stroke="#fbbf24" stroke-width=".8"/>
+      <g class="ptb ptg">
+        <rect x="19" y="19" width="9" height="5" rx=".8" fill="#fbbf24"/>
+        <line x1="21" y1="20.5" x2="26" y2="20.5" stroke="rgba(0,0,0,.25)" stroke-width=".5"/>
+        <line x1="21" y1="22"   x2="26" y2="22"   stroke="rgba(0,0,0,.25)" stroke-width=".5"/>
+        <line x1="21" y1="23.5" x2="26" y2="23.5" stroke="rgba(0,0,0,.25)" stroke-width=".5"/>
+        <text x="20.5" y="22.8" font-size="2.8" fill="rgba(0,0,0,.5)" font-family="monospace" font-weight="800">$</text>
+      </g>
+    </svg>
+    Forex Tracker
 </div>
 <p style="color:rgba(255,255,255,0.45);font-size:13px;margin:-8px 0 20px;">Live exchange rates — powered by Yahoo Finance</p>
 
