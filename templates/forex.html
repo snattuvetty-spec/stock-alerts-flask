@@ -282,13 +282,16 @@
 <div class="forex-grid" id="grid-major" data-group="major">
     {% for pair in user_pairs %}
     <div class="forex-card" draggable="true" data-ticker="{{ pair.ticker }}" style="position:relative;">
-        <div class="drag-handle" title="Drag to reorder">⠿</div>
-        <button onclick="removePair('{{ pair.ticker }}', this)"
-                title="Remove from My Pairs"
-                style="position:absolute;top:8px;left:10px;background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.2);
-                       color:#f87171;width:20px;height:20px;border-radius:4px;font-size:11px;cursor:pointer;
-                       display:flex;align-items:center;justify-content:center;line-height:1;padding:0;font-weight:700;">✕</button>
-        <div class="forex-flag" style="margin-top:4px;">{{ pair.flag }}</div>
+        <!-- Top row: drag handle left, remove button right -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div class="drag-handle" title="Drag to reorder" style="position:static;font-size:12px;color:rgba(255,255,255,0.2);">⠿</div>
+            <button onclick="removePair('{{ pair.ticker }}', this)"
+                    title="Remove from My Pairs"
+                    style="background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.2);
+                           color:#f87171;width:22px;height:22px;border-radius:5px;font-size:12px;cursor:pointer;
+                           display:flex;align-items:center;justify-content:center;padding:0;font-weight:700;flex-shrink:0;">✕</button>
+        </div>
+        <div class="forex-flag">{{ pair.flag }}</div>
         <div class="forex-pair">{{ pair.label }}</div>
         <div class="forex-name">{{ pair.name }}</div>
         <div class="forex-skeleton" id="skel-{{ pair.ticker | replace('=','_') }}"></div>
@@ -355,7 +358,13 @@
     ] %}
     {% for ticker, label, badge, name in aud_pairs %}
     <div class="forex-card" draggable="true" data-ticker="{{ ticker }}">
-        <div class="drag-handle" title="Drag to reorder">⠿</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div class="drag-handle" title="Drag to reorder" style="position:static;font-size:12px;color:rgba(255,255,255,0.2);">⠿</div>
+            <button onclick="removeFixedCard(this)" title="Hide this card"
+                    style="background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.2);
+                           color:#f87171;width:22px;height:22px;border-radius:5px;font-size:12px;cursor:pointer;
+                           display:flex;align-items:center;justify-content:center;padding:0;font-weight:700;">✕</button>
+        </div>
         <div class="forex-flag">{{ badge }}</div>
         <div class="forex-pair">{{ label }}</div>
         <div class="forex-name">{{ name }}</div>
@@ -381,7 +390,13 @@
     ] %}
     {% for ticker, label, badge, name in inr_pairs %}
     <div class="forex-card" draggable="true" data-ticker="{{ ticker }}">
-        <div class="drag-handle" title="Drag to reorder">⠿</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div class="drag-handle" title="Drag to reorder" style="position:static;font-size:12px;color:rgba(255,255,255,0.2);">⠿</div>
+            <button onclick="removeFixedCard(this)" title="Hide this card"
+                    style="background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.2);
+                           color:#f87171;width:22px;height:22px;border-radius:5px;font-size:12px;cursor:pointer;
+                           display:flex;align-items:center;justify-content:center;padding:0;font-weight:700;">✕</button>
+        </div>
         <div class="forex-flag">{{ badge }}</div>
         <div class="forex-pair">{{ label }}</div>
         <div class="forex-name">{{ name }}</div>
@@ -793,15 +808,16 @@ async function confirmAddPair() {
         card.className   = 'forex-card';
         card.draggable   = true;
         card.dataset.ticker = ticker;
-        card.style.position = 'relative';
         const safeT = ticker.replace(/=/g,'_');
         card.innerHTML = `
-            <div class="drag-handle" title="Drag to reorder">⠿</div>
-            <button onclick="removePair('${ticker}', this)" title="Remove from My Pairs"
-                    style="position:absolute;top:8px;left:10px;background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.2);
-                           color:#f87171;width:20px;height:20px;border-radius:4px;font-size:11px;cursor:pointer;
-                           display:flex;align-items:center;justify-content:center;line-height:1;padding:0;font-weight:700;">✕</button>
-            <div class="forex-flag" style="margin-top:4px;">${flag}</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <div class="drag-handle" title="Drag to reorder" style="position:static;font-size:12px;color:rgba(255,255,255,0.2);">⠿</div>
+                <button onclick="removePair('${ticker}', this)" title="Remove from My Pairs"
+                        style="background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.2);
+                               color:#f87171;width:22px;height:22px;border-radius:5px;font-size:12px;cursor:pointer;
+                               display:flex;align-items:center;justify-content:center;padding:0;font-weight:700;">✕</button>
+            </div>
+            <div class="forex-flag">${flag}</div>
             <div class="forex-pair">${label}</div>
             <div class="forex-name">${name}</div>
             <div class="forex-skeleton" id="skel-${safeT}"></div>
@@ -820,6 +836,16 @@ async function confirmAddPair() {
         errEl.style.display = 'block';
     }
     btn.textContent = '➕ Add Pair'; btn.disabled = false;
+}
+
+function removeFixedCard(btnEl) {
+    // For AUD/INR fixed sections — just hide from DOM (session only, reloads restore them)
+    const card = btnEl.closest('.forex-card');
+    if (!card) return;
+    card.style.transition = 'opacity 0.3s, transform 0.3s';
+    card.style.opacity = '0';
+    card.style.transform = 'scale(0.9)';
+    setTimeout(() => card.remove(), 300);
 }
 
 async function removePair(ticker, btnEl) {
