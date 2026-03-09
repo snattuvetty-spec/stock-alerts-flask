@@ -37,6 +37,18 @@ supabase: Client = create_client(
     os.getenv('SUPABASE_KEY')
 )
 
+# ── Default forex major pairs (used for new users and resets) ──
+DEFAULT_MAJOR_PAIRS = [
+    ('AUDUSD=X', 'AUD/USD', 'AUD', 'Australian Dollar / US Dollar'),
+    ('EURUSD=X', 'EUR/USD', 'EUR', 'Euro / US Dollar'),
+    ('GBPUSD=X', 'GBP/USD', 'GBP', 'British Pound / US Dollar'),
+    ('USDJPY=X', 'USD/JPY', 'JPY', 'US Dollar / Japanese Yen'),
+    ('USDCAD=X', 'USD/CAD', 'CAD', 'US Dollar / Canadian Dollar'),
+    ('USDCHF=X', 'USD/CHF', 'CHF', 'US Dollar / Swiss Franc'),
+    ('NZDUSD=X', 'NZD/USD', 'NZD', 'New Zealand Dollar / US Dollar'),
+    ('USDSGD=X', 'USD/SGD', 'SGD', 'US Dollar / Singapore Dollar'),
+]
+
 # ============================================================
 # BACKGROUND ALERT CHECKER WITH CACHING
 # ============================================================
@@ -468,7 +480,8 @@ def signup():
                         'email': email,
                         'email_enabled': False,
                         'telegram_enabled': False,
-                        'notification_method': 'telegram'
+                        'notification_method': 'telegram',
+                        'forex_pairs': [{'ticker': t, 'label': l, 'flag': f, 'name': n} for t, l, f, n in DEFAULT_MAJOR_PAIRS]
                     }).execute()
                     if promo_warning:
                         success = f"""{promo_warning}
@@ -1913,7 +1926,65 @@ def forex():
     username = session['username']
     all_alerts = supabase.table('alerts').select('*').eq('username', username).execute().data or []
     forex_alerts = [a for a in all_alerts if '=X' in a.get('symbol', '')]
-    return render_template('forex.html', forex_alerts=forex_alerts)
+
+    # Load user's custom major pairs (fall back to default)
+    settings = supabase.table('user_settings').select('forex_pairs').eq('username', username).execute().data
+    user_pairs = None
+    if settings and settings[0].get('forex_pairs'):
+        user_pairs = settings[0]['forex_pairs']
+    if not user_pairs:
+        user_pairs = [{'ticker': t, 'label': l, 'flag': f, 'name': n} for t, l, f, n in DEFAULT_MAJOR_PAIRS]
+        # Save defaults for this user on first visit
+        supabase.table('user_settings').update({'forex_pairs': user_pairs}).eq('username', username).execute()
+
+    return render_template('forex.html', forex_alerts=forex_alerts, user_pairs=user_pairs,
+                           default_pairs=[{'ticker': t, 'label': l, 'flag': f, 'name': n} for t, l, f, n in DEFAULT_MAJOR_PAIRS])
+
+@app.route('/forex/pairs/save', methods=['POST'])
+@login_required
+def forex_pairs_save():
+    """Add or remove a pair from the user's major pairs list."""
+    username = session['username']
+    try:
+        data = request.get_json()
+        action = data.get('action')  # 'add' or 'remove'
+        ticker = data.get('ticker', '').upper().strip()
+        if not ticker:
+            return jsonify({'success': False, 'error': 'No ticker provided'}), 400
+
+        settings = supabase.table('user_settings').select('forex_pairs').eq('username', username).execute().data
+        pairs = settings[0].get('forex_pairs') if settings else None
+        if not pairs:
+            pairs = [{'ticker': t, 'label': l, 'flag': f, 'name': n} for t, l, f, n in DEFAULT_MAJOR_PAIRS]
+
+        if action == 'remove':
+            pairs = [p for p in pairs if p['ticker'] != ticker]
+        elif action == 'add':
+            if not any(p['ticker'] == ticker for p in pairs):
+                label = data.get('label', ticker.replace('=X', '').replace('USD', '/USD').replace('EUR', '/EUR'))
+                pairs.append({
+                    'ticker': ticker,
+                    'label': data.get('label', ticker.replace('=X', '')),
+                    'flag':  data.get('flag', ''),
+                    'name':  data.get('name', ticker.replace('=X', ''))
+                })
+
+        supabase.table('user_settings').update({'forex_pairs': pairs}).eq('username', username).execute()
+        return jsonify({'success': True, 'pairs': pairs})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/forex/pairs/reset', methods=['POST'])
+@login_required
+def forex_pairs_reset():
+    """Reset user's major pairs to defaults. Does NOT touch alerts."""
+    username = session['username']
+    try:
+        default = [{'ticker': t, 'label': l, 'flag': f, 'name': n} for t, l, f, n in DEFAULT_MAJOR_PAIRS]
+        supabase.table('user_settings').update({'forex_pairs': default}).eq('username', username).execute()
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/forex/add_alert', methods=['POST'])
 @login_required

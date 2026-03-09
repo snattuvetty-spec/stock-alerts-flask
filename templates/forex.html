@@ -266,31 +266,81 @@
 </div>
 
 <!-- Major Pairs -->
-<div class="section-label">Major Pairs</div>
-<div class="section-hint">⠿ Drag cards to reorder</div>
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:4px;">
+    <div class="section-label" style="margin:0;">Major Pairs</div>
+    <div style="display:flex;gap:8px;align-items:center;">
+        <button onclick="showAddPairModal()" style="background:rgba(0,198,255,0.1);border:1px solid rgba(0,198,255,0.3);color:#00c6ff;padding:5px 12px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">
+            ＋ Add Pair
+        </button>
+        <button onclick="resetToDefaults()" id="resetBtn" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">
+            ↺ Reset to Default
+        </button>
+    </div>
+</div>
+<div class="section-hint" style="margin-bottom:12px;">⠿ Drag to reorder &nbsp;•&nbsp; Click ✕ to remove a pair</div>
+
 <div class="forex-grid" id="grid-major" data-group="major">
-    {% set major_pairs = [
-        ('AUDUSD=X', 'AUD/USD', 'AUD', 'Australian Dollar / US Dollar'),
-        ('EURUSD=X', 'EUR/USD', 'EUR', 'Euro / US Dollar'),
-        ('GBPUSD=X', 'GBP/USD', 'GBP', 'British Pound / US Dollar'),
-        ('USDJPY=X', 'USD/JPY', 'JPY', 'US Dollar / Japanese Yen'),
-        ('USDCAD=X', 'USD/CAD', 'CAD', 'US Dollar / Canadian Dollar'),
-        ('USDCHF=X', 'USD/CHF', 'CHF', 'US Dollar / Swiss Franc'),
-    ] %}
-    {% for ticker, label, badge, name in major_pairs %}
-    <div class="forex-card" draggable="true" data-ticker="{{ ticker }}">
+    {% for pair in user_pairs %}
+    <div class="forex-card" draggable="true" data-ticker="{{ pair.ticker }}" style="position:relative;">
         <div class="drag-handle" title="Drag to reorder">⠿</div>
-        <div class="forex-flag">{{ badge }}</div>
-        <div class="forex-pair">{{ label }}</div>
-        <div class="forex-name">{{ name }}</div>
-        <div class="forex-skeleton" id="skel-{{ ticker | replace('=','_') }}"></div>
-        <div class="forex-price" id="price-{{ ticker | replace('=','_') }}" style="display:none;"></div>
-        <div id="change-{{ ticker | replace('=','_') }}"></div>
+        <button onclick="removePair('{{ pair.ticker }}', this)"
+                title="Remove from My Pairs"
+                style="position:absolute;top:8px;left:10px;background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.2);
+                       color:#f87171;width:20px;height:20px;border-radius:4px;font-size:11px;cursor:pointer;
+                       display:flex;align-items:center;justify-content:center;line-height:1;padding:0;font-weight:700;">✕</button>
+        <div class="forex-flag" style="margin-top:4px;">{{ pair.flag }}</div>
+        <div class="forex-pair">{{ pair.label }}</div>
+        <div class="forex-name">{{ pair.name }}</div>
+        <div class="forex-skeleton" id="skel-{{ pair.ticker | replace('=','_') }}"></div>
+        <div class="forex-price" id="price-{{ pair.ticker | replace('=','_') }}" style="display:none;"></div>
+        <div id="change-{{ pair.ticker | replace('=','_') }}"></div>
         <div class="card-footer">
-            <button class="btn-set-alert" onclick="openModal('{{ ticker }}', '{{ label }}')">🔔 Set Alert</button>
+            <button class="btn-set-alert" onclick="openModal('{{ pair.ticker }}', '{{ pair.label }}')">🔔 Set Alert</button>
         </div>
     </div>
     {% endfor %}
+</div>
+
+<!-- Add Pair Modal -->
+<div id="addPairModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:2000;align-items:center;justify-content:center;">
+    <div style="background:#0f1923;border:1px solid rgba(0,198,255,0.25);border-radius:16px;padding:28px;width:100%;max-width:400px;margin:0 16px;">
+        <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:4px;">➕ Add Pair to My Major Pairs</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:20px;">Enter a Yahoo Finance forex ticker</div>
+
+        <div style="margin-bottom:14px;">
+            <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:6px;">Ticker Symbol</div>
+            <input id="addPairTicker" type="text" placeholder="e.g. AUDUSD=X" maxlength="20"
+                   style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(0,198,255,0.2);
+                          border-radius:8px;padding:10px 14px;color:white;font-size:15px;
+                          font-family:'DM Mono',monospace;outline:none;box-sizing:border-box;text-transform:uppercase;"
+                   oninput="this.value=this.value.toUpperCase()"
+                   onfocus="this.style.borderColor='rgba(0,198,255,0.5)'" onblur="this.style.borderColor='rgba(0,198,255,0.2)'">
+            <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;">Format: <span style="color:#00c6ff;font-family:monospace;">AUDUSD=X</span> &nbsp;•&nbsp; <span style="color:#00c6ff;font-family:monospace;">GBPINR=X</span></div>
+        </div>
+
+        <div style="margin-bottom:20px;">
+            <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:6px;">Display Label <span style="font-weight:400;text-transform:none;">(optional)</span></div>
+            <input id="addPairLabel" type="text" placeholder="e.g. AUD/USD"
+                   style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(0,198,255,0.2);
+                          border-radius:8px;padding:10px 14px;color:white;font-size:14px;outline:none;box-sizing:border-box;"
+                   onfocus="this.style.borderColor='rgba(0,198,255,0.5)'" onblur="this.style.borderColor='rgba(0,198,255,0.2)'">
+        </div>
+
+        <div id="addPairError" style="color:#f87171;font-size:12px;margin-bottom:12px;display:none;"></div>
+
+        <div style="display:flex;gap:10px;">
+            <button onclick="closeAddPairModal()"
+                    style="flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);
+                           color:rgba(255,255,255,0.5);padding:11px;border-radius:8px;font-size:14px;cursor:pointer;">
+                Cancel
+            </button>
+            <button onclick="confirmAddPair()" id="addPairBtn"
+                    style="flex:2;background:linear-gradient(135deg,#0072ff,#00c6ff);color:white;border:none;
+                           padding:11px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;">
+                ➕ Add Pair
+            </button>
+        </div>
+    </div>
 </div>
 
 <!-- AUD Cross Rates -->
@@ -429,11 +479,13 @@
 
 <script>
 // ── Tickers & live price cache ──
-const allTickers = [
-    'AUDUSD=X','EURUSD=X','GBPUSD=X','USDJPY=X','USDCAD=X','USDCHF=X',
+// Major pairs come from server (user-customisable)
+const userMajorTickers = {{ user_pairs | map(attribute='ticker') | list | tojson }};
+const fixedTickers = [
     'AUDNZD=X','AUDSGD=X','AUDINR=X','AUDGBP=X',
     'USDINR=X','EURINR=X','GBPINR=X','SGDINR=X'
 ];
+const allTickers = [...new Set([...userMajorTickers, ...fixedTickers])];
 const livePrices = {};
 
 function safeId(ticker) { return ticker.replace(/=/g, '_'); }
@@ -669,6 +721,150 @@ async function toggleAlert(alertId, currentlyEnabled) {
             btn.onclick = () => toggleAlert(alertId, newState);
         }
     } catch(e) { alert('Error updating alert.'); }
+}
+
+// ── My Major Pairs: Add / Remove / Reset ──
+
+function showAddPairModal() {
+    document.getElementById('addPairTicker').value = '';
+    document.getElementById('addPairLabel').value  = '';
+    document.getElementById('addPairError').style.display = 'none';
+    const modal = document.getElementById('addPairModal');
+    modal.style.display = 'flex';
+    setTimeout(() => document.getElementById('addPairTicker').focus(), 100);
+}
+
+function closeAddPairModal() {
+    document.getElementById('addPairModal').style.display = 'none';
+}
+
+// Close on backdrop click
+document.getElementById('addPairModal').addEventListener('click', function(e) {
+    if (e.target === this) closeAddPairModal();
+});
+
+document.getElementById('addPairTicker').addEventListener('keydown', e => {
+    if (e.key === 'Enter') confirmAddPair();
+});
+
+async function confirmAddPair() {
+    const tickerInput = document.getElementById('addPairTicker');
+    const labelInput  = document.getElementById('addPairLabel');
+    const errEl       = document.getElementById('addPairError');
+    const btn         = document.getElementById('addPairBtn');
+
+    let ticker = tickerInput.value.trim().toUpperCase();
+    if (!ticker) { errEl.textContent = '⚠️ Please enter a ticker symbol.'; errEl.style.display = 'block'; return; }
+    if (!ticker.endsWith('=X')) ticker += '=X';
+
+    // Check if already in grid
+    if (document.querySelector(`#grid-major [data-ticker="${ticker}"]`)) {
+        errEl.textContent = '⚠️ This pair is already in your Major Pairs.';
+        errEl.style.display = 'block'; return;
+    }
+
+    btn.textContent = '⏳ Verifying...'; btn.disabled = true; errEl.style.display = 'none';
+
+    // Verify ticker is valid by fetching price
+    try {
+        const res  = await fetch(`/price/${encodeURIComponent(ticker)}`);
+        const data = await res.json();
+        if (!data.price) {
+            errEl.textContent = `❌ Could not find rate for ${ticker}. Check the symbol and try again.`;
+            errEl.style.display = 'block';
+            btn.textContent = '➕ Add Pair'; btn.disabled = false; return;
+        }
+
+        const label = labelInput.value.trim() || ticker.replace('=X','').replace(/([A-Z]{3})([A-Z]{3})/,'$1/$2');
+        const flag  = ticker.replace('=X','').substring(0,3);
+        const name  = label;
+
+        const saveRes  = await fetch('/forex/pairs/save', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ action: 'add', ticker, label, flag, name })
+        });
+        const saveData = await saveRes.json();
+        if (!saveData.success) throw new Error(saveData.error || 'Save failed');
+
+        // Add card to grid
+        const grid = document.getElementById('grid-major');
+        const card = document.createElement('div');
+        card.className   = 'forex-card';
+        card.draggable   = true;
+        card.dataset.ticker = ticker;
+        card.style.position = 'relative';
+        const safeT = ticker.replace(/=/g,'_');
+        card.innerHTML = `
+            <div class="drag-handle" title="Drag to reorder">⠿</div>
+            <button onclick="removePair('${ticker}', this)" title="Remove from My Pairs"
+                    style="position:absolute;top:8px;left:10px;background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.2);
+                           color:#f87171;width:20px;height:20px;border-radius:4px;font-size:11px;cursor:pointer;
+                           display:flex;align-items:center;justify-content:center;line-height:1;padding:0;font-weight:700;">✕</button>
+            <div class="forex-flag" style="margin-top:4px;">${flag}</div>
+            <div class="forex-pair">${label}</div>
+            <div class="forex-name">${name}</div>
+            <div class="forex-skeleton" id="skel-${safeT}"></div>
+            <div class="forex-price" id="price-${safeT}" style="display:none;"></div>
+            <div id="change-${safeT}"></div>
+            <div class="card-footer">
+                <button class="btn-set-alert" onclick="openModal('${ticker}','${label}')">🔔 Set Alert</button>
+            </div>`;
+        grid.appendChild(card);
+        initDrag(grid);
+        fetchForex(ticker);
+        closeAddPairModal();
+
+    } catch(e) {
+        errEl.textContent = '❌ ' + (e.message || 'Error adding pair. Try again.');
+        errEl.style.display = 'block';
+    }
+    btn.textContent = '➕ Add Pair'; btn.disabled = false;
+}
+
+async function removePair(ticker, btnEl) {
+    const card = btnEl.closest('.forex-card');
+    if (!card) return;
+    // Optimistic UI
+    card.style.opacity = '0.4';
+    card.style.pointerEvents = 'none';
+    try {
+        const res  = await fetch('/forex/pairs/save', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ action: 'remove', ticker })
+        });
+        const data = await res.json();
+        if (data.success) {
+            card.style.transition = 'opacity 0.3s, transform 0.3s';
+            card.style.opacity = '0'; card.style.transform = 'scale(0.9)';
+            setTimeout(() => card.remove(), 300);
+        } else {
+            card.style.opacity = '1'; card.style.pointerEvents = '';
+            alert('Could not remove pair. Try again.');
+        }
+    } catch(e) {
+        card.style.opacity = '1'; card.style.pointerEvents = '';
+        alert('Network error. Try again.');
+    }
+}
+
+async function resetToDefaults() {
+    const btn = document.getElementById('resetBtn');
+    if (!confirm('Reset Major Pairs to default? Your alerts will NOT be deleted.')) return;
+    btn.textContent = '⏳ Resetting...'; btn.disabled = true;
+    try {
+        const res  = await fetch('/forex/pairs/reset', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Reset failed. Try again.');
+        }
+    } catch(e) {
+        alert('Network error. Try again.');
+    }
+    btn.textContent = '↺ Reset to Default'; btn.disabled = false;
 }
 </script>
 
