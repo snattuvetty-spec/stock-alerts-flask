@@ -173,7 +173,7 @@ Hi {user['name']},
 💰 Current Price: ${price:.3f}
 🎯 Your Target: ${alert['target']:.2f} {direction}
 
-Manage alerts: https://stock-alerts-flask.onrender.com
+Manage alerts: https://stockalertspro.nattsdigital.com
 
 Natts Digital"""
                             notification_sent = send_telegram(msg, chat_id)
@@ -231,6 +231,8 @@ scheduler.add_job(func=supabase_keepalive, trigger="interval", hours=12)
 # Add self-ping to prevent Render free tier from sleeping
 # Keep-alive disabled - using UptimeRobot instead
 # def keep_alive(): ...
+
+
 
 try:
     scheduler.start()
@@ -582,7 +584,7 @@ Hi {found['name']},
 
 Your username is: {found['username']}
 
-Login at: https://stock-alerts-flask.onrender.com
+Login at: https://stockalertspro.nattsdigital.com
 
 Natts Digital"""
                             telegram_sent = send_telegram(msg, chat_id)
@@ -632,7 +634,7 @@ Your temporary password is: {temp_pass}
 
 Please login and change it in Settings immediately.
 
-Login at: https://stock-alerts-flask.onrender.com
+Login at: https://stockalertspro.nattsdigital.com
 
 Natts Digital"""
                             telegram_sent = send_telegram(msg, chat_id)
