@@ -218,6 +218,16 @@ def send_telegram(message, chat_id):
 scheduler = BackgroundScheduler(daemon=True)
 scheduler.add_job(func=check_alerts_job, trigger="interval", minutes=5)
 
+# Supabase keep-alive — pings every 12 hours to prevent free tier pause/deletion
+def supabase_keepalive():
+    try:
+        supabase.table('users').select('username').limit(1).execute()
+        print("Supabase keep-alive OK")
+    except Exception as e:
+        print(f"Supabase keep-alive error: {e}")
+
+scheduler.add_job(func=supabase_keepalive, trigger="interval", hours=12)
+
 # Add self-ping to prevent Render free tier from sleeping
 # Keep-alive disabled - using UptimeRobot instead
 # def keep_alive(): ...
