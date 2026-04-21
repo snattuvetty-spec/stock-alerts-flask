@@ -23,6 +23,11 @@ app = Flask(__name__)
 
 app.secret_key = os.getenv('SECRET_KEY', 'natts-digital-secret-2026')
 
+# Fix session cookies for Pi Browser
+app.config['SESSION_COOKIE_SECURE'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'None'
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+
 # Stripe configuration
 stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY')
