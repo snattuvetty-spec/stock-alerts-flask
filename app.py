@@ -412,9 +412,14 @@ def login():
                         except Exception as le:
                             print(f"Login history log error: {str(le)}")
                         # Redirect admin to admin page
+
                         if user['username'] == 'admin':
-                            return redirect(url_for('admin'))
-                        return redirect(url_for('dashboard'))
+                            return '''<html><body><script>window.location.href="/admin";</script>
+                                      <p>Redirecting...</p></body></html>'''
+                        return '''<html><body><script>window.location.href="/dashboard";</script>
+                                  <p>Redirecting...</p></body></html>'''
+
+
             error = "Invalid username or password"
         except Exception as e:
             error = f"Login error: {str(e)}"
