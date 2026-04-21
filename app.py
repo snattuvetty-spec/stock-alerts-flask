@@ -2193,14 +2193,23 @@ def pi_auth():
 
 
 @app.route('/pi/payment/approve', methods=['POST'])
-@login_required
 def pi_payment_approve():
     """Record pending Pi payment"""
     try:
         payment_id = request.json.get('paymentId')
-        username = session['username']
+        token = request.json.get('token')
+        
+        # Get username from session OR token
+        username = session.get('username')
+        if not username and token:
+            user = supabase.table('users').select('username').eq('session_token', token).execute().data
+            if user:
+                username = user[0]['username']
+        
+        if not username:
+            return jsonify({'status': 'error', 'error': 'Not authenticated'}), 401
+            
         print(f"Pi payment approve: paymentId={payment_id} user={username}")
-        # Store pending payment in Supabase
         supabase.table('pi_payments').insert({
             'username': username,
             'payment_id': payment_id,
@@ -2214,15 +2223,23 @@ def pi_payment_approve():
 
 
 @app.route('/pi/payment/complete', methods=['POST'])
-@login_required
 def pi_payment_complete():
-    """Verify and complete Pi payment — activate subscription"""
+    """Verify and complete Pi payment"""
     try:
         payment_id = request.json.get('paymentId')
         txid = request.json.get('txid')
-        username = session['username']
+        token = request.json.get('token')
 
-        # Complete payment via Pi Platform API
+        # Get username from session OR token
+        username = session.get('username')
+        if not username and token:
+            user = supabase.table('users').select('username').eq('session_token', token).execute().data
+            if user:
+                username = user[0]['username']
+
+        if not username:
+            return jsonify({'status': 'error', 'error': 'Not authenticated'}), 401
+
         resp = requests.post(
             f'{PI_API_BASE}/v2/payments/{payment_id}/complete',
             headers={'Authorization': f'Key {PI_API_KEY}'},
@@ -2231,24 +2248,17 @@ def pi_payment_complete():
         print(f"Pi payment complete API response: {resp.status_code} {resp.text}")
 
         if resp.status_code == 200:
-            # Activate premium for 30 days
             trial_ends = (datetime.now() + timedelta(days=30)).isoformat()
             supabase.table('users').update({
                 'premium': True,
                 'subscription_plan': 'pi_monthly',
                 'trial_ends': trial_ends
             }).eq('username', username).execute()
-
-            # Update payment record
             supabase.table('pi_payments').update({
                 'status': 'completed',
                 'txid': txid
             }).eq('payment_id', payment_id).execute()
-
-            # Update session
             session['premium'] = True
-            session['trial_ends'] = trial_ends
-
             print(f"✅ Pi subscription activated for {username}")
             return jsonify({'status': 'ok'})
         else:

@@ -607,15 +607,15 @@ function piLogin() {
 }
 
 // Pi Subscription Payment
-
 function piSubscribe() {
     if (!window.Pi) {
         alert('Please open this app in Pi Browser.');
         return;
     }
-    // Must authenticate first before creating payment
+    // Get token from URL for session fallback
+    const urlToken = new URLSearchParams(window.location.search).get('t') || '';
+
     Pi.authenticate(['username', 'payments'], function(payment) {
-        // Incomplete payment handler
         console.log('Incomplete payment found:', payment);
     }).then(function(auth) {
         console.log('Pi auth OK, creating payment...');
@@ -629,7 +629,7 @@ function piSubscribe() {
                 fetch('/pi/payment/approve', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ paymentId: paymentId })
+                    body: JSON.stringify({ paymentId: paymentId, token: urlToken })
                 }).then(r => r.json()).then(d => console.log('Approve:', d));
             },
             onReadyForServerCompletion: function(paymentId, txid) {
@@ -637,11 +637,11 @@ function piSubscribe() {
                 fetch('/pi/payment/complete', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ paymentId: paymentId, txid: txid })
+                    body: JSON.stringify({ paymentId: paymentId, txid: txid, token: urlToken })
                 }).then(r => r.json()).then(function(data) {
                     if (data.status === 'ok') {
                         alert('🎉 Pi subscription activated!');
-                        window.location.href = '/dashboard';
+                        window.location.href = '/dashboard?t=' + urlToken;
                     } else {
                         alert('Payment error: ' + (data.error || 'Unknown'));
                     }
@@ -649,9 +649,11 @@ function piSubscribe() {
             },
             onCancel: function(paymentId) {
                 alert('Payment cancelled.');
+                console.log('Pi payment cancelled:', paymentId);
             },
             onError: function(error, payment) {
                 alert('Pi error: ' + JSON.stringify(error));
+                console.error('Pi payment error:', error);
             }
         });
     }).catch(function(err) {
@@ -659,8 +661,6 @@ function piSubscribe() {
         console.error(err);
     });
 }
-
-
 </script>
 
 {% if session.username %}
