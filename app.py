@@ -2210,16 +2210,23 @@ def pi_payment_approve():
             return jsonify({'status': 'error', 'error': 'Not authenticated'}), 401
             
         print(f"Pi payment approve: paymentId={payment_id} user={username}")
-        supabase.table('pi_payments').insert({
+
+        supabase.table('pi_payments').upsert({
             'username': username,
             'payment_id': payment_id,
             'status': 'pending',
             'created_at': datetime.now().isoformat()
-        }).execute()
+        }, on_conflict='payment_id').execute()
+
+
         return jsonify({'status': 'ok'})
-    except Exception as e:
-        print(f"Pi payment approve error: {str(e)}")
-        return jsonify({'status': 'error', 'error': str(e)}), 500
+        except Exception as e:
+            # If duplicate key, that's OK — already approved
+            if '23505' in str(e) or 'duplicate' in str(e).lower():
+                print(f"Pi payment already approved (duplicate): {payment_id}")
+                return jsonify({'status': 'ok'})
+            print(f"Pi payment approve error: {str(e)}")
+            return jsonify({'status': 'error', 'error': str(e)}), 500
 
 
 @app.route('/pi/payment/complete', methods=['POST'])
