@@ -339,20 +339,24 @@ def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         if 'username' not in session:
+            print(f"login_required: no username in session, redirecting")
             return redirect(url_for('login'))
-        # Single session enforcement - check token every 60 seconds only
         username = session['username']
         session_token = session.get('session_token')
         last_check = session.get('token_last_check', 0)
         if session_token and (time.time() - last_check > 60):
             try:
                 user = supabase.table('users').select('session_token').eq('username', username).execute().data
-                if user and user[0].get('session_token') != session_token:
+                db_token = user[0].get('session_token') if user else None
+                print(f"login_required: session_token={session_token[:8]}... db_token={str(db_token)[:8] if db_token else None}")
+                if user and db_token != session_token:
+                    print(f"login_required: token mismatch — clearing session")
                     session.clear()
                     return redirect(url_for('login', error='Your account was logged in from another device.'))
                 session['token_last_check'] = time.time()
-            except:
-                pass  # DB error - allow through rather than lock everyone out
+            except Exception as e:
+                print(f"login_required: DB check error: {e}")
+                pass
         return f(*args, **kwargs)
     return decorated
 
