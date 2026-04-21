@@ -351,6 +351,11 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated
 
+@app.route('/validation-key.txt')
+def validation_key():
+    return send_from_directory('static', 'validation-key.txt')
+
+
 # ============================================================
 # AUTH ROUTES
 # ============================================================
