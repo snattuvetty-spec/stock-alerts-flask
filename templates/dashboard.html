@@ -91,6 +91,13 @@
         <a href="/settings" style="background:#f39c12;color:white;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;text-decoration:none;">
             ⭐ Upgrade to Premium
         </a>
+        <!-- Pi Payment — only visible in Pi Browser -->
+        <button id="pi-subscribe-btn" onclick="piSubscribe()"
+                style="display:none;background:linear-gradient(135deg,#7B3FE4,#A855F7);color:white;
+                       padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;border:none;cursor:pointer;">
+            π Pay with Pi
+        </button>
+        <script>if(window.Pi)document.getElementById('pi-subscribe-btn').style.display='inline-block';</script>
     {% else %}
         <button onclick="document.getElementById('subModal').classList.add('active')"
                 style="background:#27ae60;color:white;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;border:none;cursor:pointer;">

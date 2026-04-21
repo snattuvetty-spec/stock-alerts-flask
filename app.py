@@ -228,12 +228,6 @@ def supabase_keepalive():
 
 scheduler.add_job(func=supabase_keepalive, trigger="interval", hours=12)
 
-# Add self-ping to prevent Render free tier from sleeping
-# Keep-alive disabled - using UptimeRobot instead
-# def keep_alive(): ...
-
-
-
 try:
     scheduler.start()
     print("Background scheduler started successfully")
@@ -354,6 +348,10 @@ def login_required(f):
 @app.route('/validation-key.txt')
 def validation_key():
     return send_from_directory('static', 'validation-key.txt')
+
+
+
+
 
 
 # ============================================================
@@ -2062,6 +2060,164 @@ def forex_toggle_alert(alert_id):
 def help_page():
     import os
     return send_from_directory(os.path.dirname(os.path.abspath(__file__)), 'static_help.html')
+
+
+# ============================================================
+# PI NETWORK INTEGRATION
+# ============================================================
+PI_API_KEY = os.getenv('PI_API_KEY')
+PI_API_BASE = 'https://api.minepi.com'
+
+@app.route('/pi/auth', methods=['POST'])
+def pi_auth():
+    """Verify Pi access token and create/link user session"""
+    try:
+        access_token = request.json.get('access_token')
+        if not access_token:
+            return jsonify({'status': 'error', 'error': 'No access token'}), 400
+
+        # Verify token with Pi Platform API
+        resp = requests.get(
+            f'{PI_API_BASE}/v2/me',
+            headers={'Authorization': f'Bearer {access_token}'},
+            timeout=10
+        )
+        if resp.status_code != 200:
+            return jsonify({'status': 'error', 'error': 'Invalid Pi token'}), 401
+
+        pi_user = resp.json()
+        pi_uid = pi_user.get('uid')
+        pi_username = pi_user.get('username', pi_uid)
+
+        if not pi_uid:
+            return jsonify({'status': 'error', 'error': 'No Pi UID returned'}), 400
+
+        # Check if user with this pi_uid already exists
+        result = supabase.table('users').select('*').eq('pi_uid', pi_uid).execute()
+
+        if result.data:
+            # Existing Pi user — log them in
+            user = result.data[0]
+        else:
+            # Check if logged-in user exists — link Pi UID to their account
+            if 'username' in session:
+                supabase.table('users').update({'pi_uid': pi_uid}).eq('username', session['username']).execute()
+                user = supabase.table('users').select('*').eq('username', session['username']).execute().data[0]
+            else:
+                # New user via Pi — create account
+                trial_ends = (datetime.now() + timedelta(days=21)).isoformat()
+                username = f'pi_{pi_username}'
+                # Ensure unique username
+                existing = supabase.table('users').select('username').eq('username', username).execute()
+                if existing.data:
+                    username = f'pi_{pi_uid[:8]}'
+
+                supabase.table('users').insert({
+                    'username': username,
+                    'password_hash': hash_password(pi_uid),  # use pi_uid as password
+                    'email': f'{pi_uid}@pi.network',
+                    'name': pi_username,
+                    'trial_ends': trial_ends,
+                    'premium': False,
+                    'pi_uid': pi_uid
+                }).execute()
+                supabase.table('user_settings').insert({
+                    'username': username,
+                    'email': f'{pi_uid}@pi.network',
+                    'email_enabled': False,
+                    'telegram_enabled': False,
+                    'notification_method': 'telegram',
+                    'forex_pairs': json.dumps([{'ticker': t, 'label': l, 'flag': f, 'name': n}
+                                               for t, l, f, n in DEFAULT_MAJOR_PAIRS])
+                }).execute()
+                user = supabase.table('users').select('*').eq('username', username).execute().data[0]
+
+        # Create session
+        token = ''.join(random.choices(string.ascii_letters + string.digits, k=32))
+        supabase.table('users').update({
+            'session_token': token,
+            'last_login': datetime.now(ZoneInfo('Australia/Brisbane')).strftime('%Y-%m-%dT%H:%M:%S')
+        }).eq('username', user['username']).execute()
+
+        session['username'] = user['username']
+        session['name'] = user['name']
+        session['premium'] = user.get('premium', False)
+        session['trial_ends'] = user.get('trial_ends', '')
+        session['session_token'] = token
+
+        print(f"✅ Pi login OK: {user['username']} (pi_uid={pi_uid})")
+        return jsonify({'status': 'ok', 'username': user['username']})
+
+    except Exception as e:
+        print(f"Pi auth error: {str(e)}")
+        return jsonify({'status': 'error', 'error': str(e)}), 500
+
+
+@app.route('/pi/payment/approve', methods=['POST'])
+@login_required
+def pi_payment_approve():
+    """Record pending Pi payment"""
+    try:
+        payment_id = request.json.get('paymentId')
+        username = session['username']
+        print(f"Pi payment approve: paymentId={payment_id} user={username}")
+        # Store pending payment in Supabase
+        supabase.table('pi_payments').insert({
+            'username': username,
+            'payment_id': payment_id,
+            'status': 'pending',
+            'created_at': datetime.now().isoformat()
+        }).execute()
+        return jsonify({'status': 'ok'})
+    except Exception as e:
+        print(f"Pi payment approve error: {str(e)}")
+        return jsonify({'status': 'error', 'error': str(e)}), 500
+
+
+@app.route('/pi/payment/complete', methods=['POST'])
+@login_required
+def pi_payment_complete():
+    """Verify and complete Pi payment — activate subscription"""
+    try:
+        payment_id = request.json.get('paymentId')
+        txid = request.json.get('txid')
+        username = session['username']
+
+        # Complete payment via Pi Platform API
+        resp = requests.post(
+            f'{PI_API_BASE}/v2/payments/{payment_id}/complete',
+            headers={'Authorization': f'Key {PI_API_KEY}'},
+            timeout=10
+        )
+        print(f"Pi payment complete API response: {resp.status_code} {resp.text}")
+
+        if resp.status_code == 200:
+            # Activate premium for 30 days
+            trial_ends = (datetime.now() + timedelta(days=30)).isoformat()
+            supabase.table('users').update({
+                'premium': True,
+                'subscription_plan': 'pi_monthly',
+                'trial_ends': trial_ends
+            }).eq('username', username).execute()
+
+            # Update payment record
+            supabase.table('pi_payments').update({
+                'status': 'completed',
+                'txid': txid
+            }).eq('payment_id', payment_id).execute()
+
+            # Update session
+            session['premium'] = True
+            session['trial_ends'] = trial_ends
+
+            print(f"✅ Pi subscription activated for {username}")
+            return jsonify({'status': 'ok'})
+        else:
+            return jsonify({'status': 'error', 'error': 'Pi API verification failed'}), 400
+
+    except Exception as e:
+        print(f"Pi payment complete error: {str(e)}")
+        return jsonify({'status': 'error', 'error': str(e)}), 500
 
 
 @app.route('/admin/run-checks')

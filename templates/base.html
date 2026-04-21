@@ -14,6 +14,10 @@
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="/static/manifest.json">
+
+    <!-- Pi Network SDK -->
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <script>Pi.init({ version: "2.0", sandbox: true })</script>
     
     <!-- App Icons -->
     <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png">
@@ -421,6 +425,14 @@
         </a>
         <a href="/help">📖 <span class="label">Help</span></a>
         <a href="/logout">🚪 <span class="label">Logout</span></a>
+        <!-- Pi Network Login Button -->
+        <button id="pi-login-btn" onclick="piLogin()"
+                style="display:none;background:linear-gradient(135deg,#7B3FE4,#A855F7);color:white;
+                       border:none;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;
+                       cursor:pointer;gap:6px;align-items:center;">
+            <img src="https://minepi.com/favicon.ico" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;">
+            Pi Login
+        </button>
     </div>
 </nav>
 {% endif %}
@@ -552,6 +564,84 @@ function dismissInstallBanner() {
 </script>
 
 {% block scripts %}{% endblock %}
+
+<!-- Pi Network Integration -->
+<script>
+// Show Pi Login button only inside Pi Browser
+function isPiBrowser() {
+    return window.Pi !== undefined;
+}
+
+window.addEventListener('load', function() {
+    if (isPiBrowser()) {
+        const btn = document.getElementById('pi-login-btn');
+        if (btn) { btn.style.display = 'inline-flex'; }
+    }
+});
+
+// Pi Login
+function piLogin() {
+    Pi.authenticate(['username', 'payments'], function(payment) {
+        // Incomplete payment handler — complete any pending payment
+        fetch('/pi/payment/complete', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ paymentId: payment.identifier })
+        });
+    }).then(function(auth) {
+        return fetch('/pi/auth', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ access_token: auth.accessToken })
+        });
+    }).then(function(res) { return res.json(); })
+    .then(function(data) {
+        if (data.status === 'ok') {
+            window.location.reload();
+        } else {
+            alert('Pi login failed: ' + (data.error || 'Unknown error'));
+        }
+    }).catch(function(err) {
+        console.error('Pi login error:', err);
+    });
+}
+
+// Pi Subscription Payment
+function piSubscribe() {
+    if (!isPiBrowser()) {
+        alert('Please open this app in the Pi Browser to pay with Pi.');
+        return;
+    }
+    Pi.createPayment({
+        amount: 3.14,
+        memo: 'Stock Alerts Pro — Monthly Subscription',
+        metadata: { plan: 'monthly' }
+    }, {
+        onReadyForServerApproval: function(paymentId) {
+            fetch('/pi/payment/approve', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ paymentId: paymentId })
+            });
+        },
+        onReadyForServerCompletion: function(paymentId, txid) {
+            fetch('/pi/payment/complete', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ paymentId: paymentId, txid: txid })
+            }).then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.status === 'ok') {
+                    alert('🎉 Pi subscription activated!');
+                    window.location.reload();
+                }
+            });
+        },
+        onCancel: function(paymentId) { console.log('Pi payment cancelled:', paymentId); },
+        onError: function(error, payment) { console.error('Pi payment error:', error); }
+    });
+}
+</script>
 
 {% if session.username %}
 <!-- Floating Feedback Button -->
