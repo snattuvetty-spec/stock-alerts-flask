@@ -342,6 +342,22 @@ def login_required(f):
     import time
     @wraps(f)
     def decorated(*args, **kwargs):
+        # Check URL token first (Pi Browser fallback)
+        url_token = request.args.get('t')
+        if url_token and 'username' not in session:
+            try:
+                user = supabase.table('users').select('*').eq('session_token', url_token).execute().data
+                if user:
+                    session['username'] = user[0]['username']
+                    session['name'] = user[0]['name']
+                    session['premium'] = user[0].get('premium', False)
+                    session['trial_ends'] = user[0].get('trial_ends', '')
+                    session['session_token'] = url_token
+                    session.permanent = True
+                    print(f"login_required: restored session from URL token for {user[0]['username']}")
+            except Exception as e:
+                print(f"login_required: URL token restore error: {e}")
+
         if 'username' not in session:
             print(f"login_required: no username in session, redirecting")
             return redirect(url_for('login'))
@@ -352,9 +368,7 @@ def login_required(f):
             try:
                 user = supabase.table('users').select('session_token').eq('username', username).execute().data
                 db_token = user[0].get('session_token') if user else None
-                print(f"login_required: session_token={session_token[:8]}... db_token={str(db_token)[:8] if db_token else None}")
                 if user and db_token != session_token:
-                    print(f"login_required: token mismatch — clearing session")
                     session.clear()
                     return redirect(url_for('login', error='Your account was logged in from another device.'))
                 session['token_last_check'] = time.time()
@@ -413,10 +427,11 @@ def login():
                             print(f"Login history log error: {str(le)}")
                         # Redirect admin to admin page
 
+                        # After setting session variables, also pass token in URL
                         if user['username'] == 'admin':
-                            return '''<html><body><script>window.location.href="/admin";</script>
+                            return '''<html><body><script>window.location.href="/admin?t=''' + token + '''";</script>
                                       <p>Redirecting...</p></body></html>'''
-                        return '''<html><body><script>window.location.href="/dashboard";</script>
+                        return '''<html><body><script>window.location.href="/dashboard?t=''' + token + '''";</script>
                                   <p>Redirecting...</p></body></html>'''
 
 
