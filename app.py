@@ -23,10 +23,16 @@ app = Flask(__name__)
 
 app.secret_key = os.getenv('SECRET_KEY', 'natts-digital-secret-2026')
 
-# Fix session cookies for Pi Browser
+# Fix session cookies for Pi Browser / webview context
 app.config['SESSION_COOKIE_SECURE'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'None'
 app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_NAME'] = 'sap_session'
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
+
+@app.before_request
+def make_session_permanent():
+    session.permanent = True
 
 # Stripe configuration
 stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
