@@ -9,3 +9,4 @@ apscheduler>=3.10.4
 stripe>=8.0.0
 pytz>=2024.1
 openpyxl>=3.0.0
+Flask-Session

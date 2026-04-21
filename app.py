@@ -4,6 +4,7 @@ load_dotenv()
 
 
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, send_from_directory
+from flask_session import Session
 from supabase import create_client, Client
 import bcrypt
 import os
@@ -20,15 +21,18 @@ import string
 
 app = Flask(__name__)
 
-
 app.secret_key = os.getenv('SECRET_KEY', 'natts-digital-secret-2026')
 
-# Fix session cookies for Pi Browser / webview context
+# Server-side filesystem sessions — fixes Pi Browser cookie blocking
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_FILE_DIR'] = '/tmp/flask_sessions'
+app.config['SESSION_PERMANENT'] = True
+app.config['SESSION_USE_SIGNER'] = True
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 app.config['SESSION_COOKIE_SECURE'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'None'
 app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_NAME'] = 'sap_session'
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
+Session(app)
 
 @app.before_request
 def make_session_permanent():
