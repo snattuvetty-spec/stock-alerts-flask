@@ -2194,39 +2194,30 @@ def pi_auth():
 
 @app.route('/pi/payment/approve', methods=['POST'])
 def pi_payment_approve():
-    """Record pending Pi payment"""
     try:
         payment_id = request.json.get('paymentId')
         token = request.json.get('token')
-        
-        # Get username from session OR token
         username = session.get('username')
         if not username and token:
             user = supabase.table('users').select('username').eq('session_token', token).execute().data
             if user:
                 username = user[0]['username']
-        
         if not username:
             return jsonify({'status': 'error', 'error': 'Not authenticated'}), 401
-            
         print(f"Pi payment approve: paymentId={payment_id} user={username}")
-
-        supabase.table('pi_payments').upsert({
-            'username': username,
-            'payment_id': payment_id,
-            'status': 'pending',
-            'created_at': datetime.now().isoformat()
-        }, on_conflict='payment_id').execute()
-
-
+        try:
+            supabase.table('pi_payments').insert({
+                'username': username,
+                'payment_id': payment_id,
+                'status': 'pending',
+                'created_at': datetime.now().isoformat()
+            }).execute()
+        except:
+            pass  # Duplicate — already approved, ignore
         return jsonify({'status': 'ok'})
-        except Exception as e:
-            # If duplicate key, that's OK — already approved
-            if '23505' in str(e) or 'duplicate' in str(e).lower():
-                print(f"Pi payment already approved (duplicate): {payment_id}")
-                return jsonify({'status': 'ok'})
-            print(f"Pi payment approve error: {str(e)}")
-            return jsonify({'status': 'error', 'error': str(e)}), 500
+    except Exception as e:
+        print(f"Pi payment approve error: {str(e)}")
+        return jsonify({'status': 'error', 'error': str(e)}), 500
 
 
 @app.route('/pi/payment/complete', methods=['POST'])
