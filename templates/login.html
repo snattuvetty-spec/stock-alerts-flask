@@ -635,30 +635,37 @@ document.querySelector('form').addEventListener('submit', function() {
 <script>
 if (window.Pi) {
     Pi.init({ version: "2.0", sandbox: true });
-    // Auto login via Pi when opened in Pi Browser
+    var userTyped = false;
     document.addEventListener('DOMContentLoaded', function() {
-        Pi.authenticate(['username', 'payments'], function(payment) {
-            if (payment) {
-                fetch('/pi/payment/complete', {
+        document.querySelectorAll('input').forEach(function(inp) {
+            inp.addEventListener('focus', function() { userTyped = true; });
+            inp.addEventListener('keydown', function() { userTyped = true; });
+        });
+        setTimeout(function() {
+            if (userTyped) return;
+            Pi.authenticate(['username', 'payments'], function(payment) {
+                if (payment) {
+                    fetch('/pi/payment/complete', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ paymentId: payment.identifier })
+                    });
+                }
+            }).then(function(auth) {
+                return fetch('/pi/auth', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ paymentId: payment.identifier })
+                    body: JSON.stringify({ access_token: auth.accessToken })
                 });
-            }
-        }).then(function(auth) {
-            return fetch('/pi/auth', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ access_token: auth.accessToken })
+            }).then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.status === 'ok') {
+                    window.location.href = '/dashboard?t=' + data.token;
+                }
+            }).catch(function(err) {
+                console.error('Pi auto-login error:', err);
             });
-        }).then(function(res) { return res.json(); })
-        .then(function(data) {
-            if (data.status === 'ok') {
-                window.location.href = '/dashboard?t=' + data.token;
-            }
-        }).catch(function(err) {
-            console.error('Pi auto-login error:', err);
-        });
+        }, 1500);
     });
 }
 </script>
