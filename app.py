@@ -361,6 +361,7 @@ def login_required(f):
         if 'username' not in session:
             print(f"login_required: no username in session, redirecting")
             return redirect(url_for('login'))
+        # Single session enforcement - check token every 60 seconds only
         username = session['username']
         session_token = session.get('session_token')
         last_check = session.get('token_last_check', 0)
@@ -369,6 +370,7 @@ def login_required(f):
                 user = supabase.table('users').select('session_token').eq('username', username).execute().data
                 db_token = user[0].get('session_token') if user else None
                 if user and db_token != session_token:
+                    print(f"login_required: token mismatch — clearing session")
                     session.clear()
                     return redirect(url_for('login', error='Your account was logged in from another device.'))
                 session['token_last_check'] = time.time()
@@ -378,18 +380,13 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated
 
+# ============================================================
+# AUTH ROUTES
+# ============================================================
 @app.route('/validation-key.txt')
 def validation_key():
     return send_from_directory('static', 'validation-key.txt')
 
-
-
-
-
-
-# ============================================================
-# AUTH ROUTES
-# ============================================================
 @app.route('/health')
 def health():
     return jsonify({'status': 'ok', 'message': 'App is running'})
@@ -425,16 +422,10 @@ def login():
                             }).execute()
                         except Exception as le:
                             print(f"Login history log error: {str(le)}")
-                        # Redirect admin to admin page
-
-                        # After setting session variables, also pass token in URL
+                        # Redirect admin to admin page — use JS redirect with token for Pi Browser
                         if user['username'] == 'admin':
-                            return '''<html><body><script>window.location.href="/admin?t=''' + token + '''";</script>
-                                      <p>Redirecting...</p></body></html>'''
-                        return '''<html><body><script>window.location.href="/dashboard?t=''' + token + '''";</script>
-                                  <p>Redirecting...</p></body></html>'''
-
-
+                            return '''<html><body><script>window.location.href="/admin?t=''' + token + '''";</script><p>Redirecting...</p></body></html>'''
+                        return '''<html><body><script>window.location.href="/dashboard?t=''' + token + '''";</script><p>Redirecting...</p></body></html>'''
             error = "Invalid username or password"
         except Exception as e:
             error = f"Login error: {str(e)}"
@@ -2185,7 +2176,7 @@ def pi_auth():
         session['session_token'] = token
 
         print(f"✅ Pi login OK: {user['username']} (pi_uid={pi_uid})")
-        return jsonify({'status': 'ok', 'username': user['username']})
+        return jsonify({'status': 'ok', 'username': user['username'], 'token': token})
 
     except Exception as e:
         print(f"Pi auth error: {str(e)}")
@@ -2194,6 +2185,7 @@ def pi_auth():
 
 @app.route('/pi/payment/approve', methods=['POST'])
 def pi_payment_approve():
+    """Record pending Pi payment"""
     try:
         payment_id = request.json.get('paymentId')
         token = request.json.get('token')
@@ -2222,22 +2214,20 @@ def pi_payment_approve():
 
 @app.route('/pi/payment/complete', methods=['POST'])
 def pi_payment_complete():
-    """Verify and complete Pi payment"""
+    """Verify and complete Pi payment — activate subscription"""
     try:
         payment_id = request.json.get('paymentId')
         txid = request.json.get('txid')
         token = request.json.get('token')
-
-        # Get username from session OR token
         username = session.get('username')
         if not username and token:
             user = supabase.table('users').select('username').eq('session_token', token).execute().data
             if user:
                 username = user[0]['username']
-
         if not username:
             return jsonify({'status': 'error', 'error': 'Not authenticated'}), 401
 
+        # Complete payment via Pi Platform API
         resp = requests.post(
             f'{PI_API_BASE}/v2/payments/{payment_id}/complete',
             headers={'Authorization': f'Key {PI_API_KEY}'},
@@ -2246,17 +2236,24 @@ def pi_payment_complete():
         print(f"Pi payment complete API response: {resp.status_code} {resp.text}")
 
         if resp.status_code == 200:
+            # Activate premium for 30 days
             trial_ends = (datetime.now() + timedelta(days=30)).isoformat()
             supabase.table('users').update({
                 'premium': True,
                 'subscription_plan': 'pi_monthly',
                 'trial_ends': trial_ends
             }).eq('username', username).execute()
+
+            # Update payment record
             supabase.table('pi_payments').update({
                 'status': 'completed',
                 'txid': txid
             }).eq('payment_id', payment_id).execute()
+
+            # Update session
             session['premium'] = True
+            session['trial_ends'] = trial_ends
+
             print(f"✅ Pi subscription activated for {username}")
             return jsonify({'status': 'ok'})
         else:
