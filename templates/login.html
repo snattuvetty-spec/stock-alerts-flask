@@ -633,7 +633,7 @@ document.querySelector('form').addEventListener('submit', function() {
 <!-- Pi Network SDK + Auto Login -->
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 <script>
-if (window.Pi) {
+if (window.Pi && !sessionStorage.getItem('pi_auth_attempted')) {
     Pi.init({ version: "2.0", sandbox: true });
     var userTyped = false;
     document.addEventListener('DOMContentLoaded', function() {
@@ -643,6 +643,7 @@ if (window.Pi) {
         });
         setTimeout(function() {
             if (userTyped) return;
+            sessionStorage.setItem('pi_auth_attempted', '1');  // ADD THIS LINE
             Pi.authenticate(['username', 'payments'], function(payment) {
                 if (payment) {
                     fetch('/pi/payment/complete', {
