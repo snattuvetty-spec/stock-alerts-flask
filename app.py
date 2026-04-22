@@ -38,6 +38,13 @@ Session(app)
 def make_session_permanent():
     session.permanent = True
 
+@app.after_request
+def add_cors_headers(response):
+    response.headers['Access-Control-Allow-Origin'] = 'https://stockalertspro.nattsdigital.com'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+    return response
+
 # Stripe configuration
 stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY')
@@ -2185,7 +2192,7 @@ def pi_auth():
 
 @app.route('/pi/payment/approve', methods=['POST'])
 def pi_payment_approve():
-    """Record pending Pi payment"""
+    """Approve Pi payment — must call Pi API to move payment from created to approved"""
     try:
         payment_id = request.json.get('paymentId')
         token = request.json.get('token')
@@ -2197,16 +2204,32 @@ def pi_payment_approve():
         if not username:
             return jsonify({'status': 'error', 'error': 'Not authenticated'}), 401
         print(f"Pi payment approve: paymentId={payment_id} user={username}")
+
+        # CRITICAL: Call Pi API to approve the payment
+        # Without this, the wallet screen never shows the confirm button
+        pi_resp = requests.post(
+            f'{PI_API_BASE}/v2/payments/{payment_id}/approve',
+            headers={'Authorization': f'Key {PI_API_KEY}'},
+            timeout=10
+        )
+        print(f"Pi approve API response: {pi_resp.status_code} {pi_resp.text}")
+
+        if pi_resp.status_code != 200:
+            print(f"Pi approve API failed: {pi_resp.text}")
+            return jsonify({'status': 'error', 'error': 'Pi API approve failed'}), 400
+
+        # Save to DB
         try:
             supabase.table('pi_payments').insert({
                 'username': username,
                 'payment_id': payment_id,
-                'status': 'pending',
+                'status': 'approved',
                 'created_at': datetime.now().isoformat()
             }).execute()
         except:
             pass  # Duplicate — already approved, ignore
-        return jsonify({'status': 'ok'})
+
+        return jsonify({'status': 'ok', 'message': 'Approved'})
     except Exception as e:
         print(f"Pi payment approve error: {str(e)}")
         return jsonify({'status': 'error', 'error': str(e)}), 500
