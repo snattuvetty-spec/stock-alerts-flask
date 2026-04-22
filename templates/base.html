@@ -624,7 +624,7 @@ function piSubscribe() {
     }).then(function(auth) {
         console.log('Pi auth OK, creating payment...');
         return Pi.createPayment({
-            amount: 3.14,
+            amount: 0.01,
             memo: 'Stock Alerts Pro — Monthly Subscription',
             metadata: { plan: 'monthly' }
         }, {
