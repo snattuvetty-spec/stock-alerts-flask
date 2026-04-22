@@ -17,7 +17,7 @@
 
     <!-- Pi Network SDK -->
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-    <script>Pi.init({ version: "2.0", sandbox: true })</script>
+    <script>Pi.init({ version: "2.0", sandbox: false })</script>
     
     <!-- App Icons -->
     <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png">
@@ -582,12 +582,14 @@ window.addEventListener('load', function() {
 // Pi Login
 function piLogin() {
     Pi.authenticate(['username', 'payments'], function(payment) {
-        // Incomplete payment handler — complete any pending payment
-        fetch('/pi/payment/complete', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ paymentId: payment.identifier })
-        });
+        // Incomplete payment — complete it after login
+        if (payment) {
+            fetch('/pi/payment/complete', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ paymentId: payment.identifier })
+            });
+        }
     }).then(function(auth) {
         return fetch('/pi/auth', {
             method: 'POST',
@@ -597,12 +599,14 @@ function piLogin() {
     }).then(function(res) { return res.json(); })
     .then(function(data) {
         if (data.status === 'ok') {
-            window.location.reload();
+            // Redirect with token so session persists
+            window.location.href = '/dashboard?t=' + data.token;
         } else {
             alert('Pi login failed: ' + (data.error || 'Unknown error'));
         }
     }).catch(function(err) {
         console.error('Pi login error:', err);
+        alert('Pi login error: ' + err.message);
     });
 }
 
