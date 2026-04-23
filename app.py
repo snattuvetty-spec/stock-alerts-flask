@@ -2194,45 +2194,54 @@ def pi_auth():
 def pi_payment_approve():
     """Approve Pi payment — must call Pi API to move payment from created to approved"""
     try:
-        payment_id = request.json.get('paymentId')
-        token = request.json.get('token')
+        data = request.json
+        payment_id = data.get('paymentId')
+        token = data.get('token')
         username = session.get('username')
+
+        # 1. Handle Authentication (Supabase fallback)
         if not username and token:
             user = supabase.table('users').select('username').eq('session_token', token).execute().data
             if user:
                 username = user[0]['username']
+        
         if not username:
             return jsonify({'status': 'error', 'error': 'Not authenticated'}), 401
+
         print(f"Pi payment approve: paymentId={payment_id} user={username}")
 
-        # CRITICAL: Call Pi API to approve the payment
-        # Without this, the wallet screen never shows the confirm button
-        # Change timeout from 10 to 30 seconds
+        # 2. CRITICAL FIX: Call the /approve endpoint, NOT /complete
+        # Also ensure headers use your PI_API_KEY from environment variables
+        approve_url = f'https://api.minepi.com/v2/payments/{payment_id}/approve'
+        
         resp = requests.post(
-            f'{PI_API_BASE}/v2/payments/{payment_id}/complete',
-            headers={'Authorization': f'Key {PI_API_KEY}'},
-            json={'txid': txid} if txid else {},
-            timeout=30  # increased from 10
+            approve_url,
+            headers={'Authorization': f'Key {os.getenv("PI_API_KEY")}'},
+            timeout=30
         )
-        print(f"Pi approve API response: {pi_resp.status_code} {pi_resp.text}")
+        
+        print(f"Pi approve API response: {resp.status_code} {resp.text}")
 
-        if pi_resp.status_code != 200:
-            print(f"Pi approve API failed: {pi_resp.text}")
+        if resp.status_code != 200:
+            print(f"Pi approve API failed: {resp.text}")
             return jsonify({'status': 'error', 'error': 'Pi API approve failed'}), 400
 
-        # Save to DB
+        # 3. Log to Supabase
         try:
             supabase.table('pi_payments').insert({
                 'username': username,
                 'payment_id': payment_id,
                 'status': 'approved',
-                'created_at': datetime.now().isoformat()
+                'created_at': datetime.now(timezone.utc).isoformat()
             }).execute()
-        except:
-            pass  # Duplicate — already approved, ignore
+        except Exception as db_e:
+            print(f"Database log skipped (likely duplicate): {str(db_e)}")
+            pass
 
         return jsonify({'status': 'ok', 'message': 'Approved'})
+
     except Exception as e:
+        # This will no longer trigger "txid not defined" because we removed it
         print(f"Pi payment approve error: {str(e)}")
         return jsonify({'status': 'error', 'error': str(e)}), 500
 
