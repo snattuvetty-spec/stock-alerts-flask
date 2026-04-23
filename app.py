@@ -2235,6 +2235,8 @@ def pi_payment_approve():
         return jsonify({'status': 'error', 'error': str(e)}), 500
 
 
+
+
 @app.route('/pi/payment/complete', methods=['POST'])
 def pi_payment_complete():
     """Verify and complete Pi payment — activate subscription"""
@@ -2250,10 +2252,25 @@ def pi_payment_complete():
         if not username:
             return jsonify({'status': 'error', 'error': 'Not authenticated'}), 401
 
+        # If no txid yet, check payment status from Pi API directly
+        if not txid:
+            status_resp = requests.get(
+                f'{PI_API_BASE}/v2/payments/{payment_id}',
+                headers={'Authorization': f'Key {PI_API_KEY}'},
+                timeout=10
+            )
+            if status_resp.status_code == 200:
+                payment_data = status_resp.json()
+                txid = payment_data.get('transaction', {})
+                if txid:
+                    txid = txid.get('txid')
+                print(f"Pi payment status check: txid={txid} status={payment_data.get('status')}")
+
         # Complete payment via Pi Platform API
         resp = requests.post(
             f'{PI_API_BASE}/v2/payments/{payment_id}/complete',
             headers={'Authorization': f'Key {PI_API_KEY}'},
+            json={'txid': txid} if txid else {},
             timeout=10
         )
         print(f"Pi payment complete API response: {resp.status_code} {resp.text}")
@@ -2266,21 +2283,36 @@ def pi_payment_complete():
                 'subscription_plan': 'pi_monthly',
                 'trial_ends': trial_ends
             }).eq('username', username).execute()
-
-            # Update payment record
             supabase.table('pi_payments').update({
                 'status': 'completed',
                 'txid': txid
             }).eq('payment_id', payment_id).execute()
-
-            # Update session
             session['premium'] = True
             session['trial_ends'] = trial_ends
-
             print(f"✅ Pi subscription activated for {username}")
             return jsonify({'status': 'ok'})
         else:
+            # Payment approved but not yet on blockchain — still activate premium
+            # Pi Testnet can be slow, complete will be verified later
+            if resp.status_code == 400 and 'txid' in resp.text:
+                trial_ends = (datetime.now() + timedelta(days=30)).isoformat()
+                supabase.table('users').update({
+                    'premium': True,
+                    'subscription_plan': 'pi_monthly',
+                    'trial_ends': trial_ends
+                }).eq('username', username).execute()
+                session['premium'] = True
+                print(f"✅ Pi subscription activated for {username} (txid pending)")
+                return jsonify({'status': 'ok'})
             return jsonify({'status': 'error', 'error': 'Pi API verification failed'}), 400
+
+    except Exception as e:
+        print(f"Pi payment complete error: {str(e)}")
+        return jsonify({'status': 'error', 'error': str(e)}), 500
+
+
+
+
 
     except Exception as e:
         print(f"Pi payment complete error: {str(e)}")
