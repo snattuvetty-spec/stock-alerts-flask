@@ -645,12 +645,9 @@ if (window.Pi) {
             if (userTyped) return;
             
             Pi.authenticate(['username', 'payments'], function(payment) {
-                if (payment) {
-                    fetch('/pi/payment/complete', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ paymentId: payment.identifier })
-                    });
+                // Ignore incomplete payments during auto-login
+                console.log('Incomplete payment ignored:', payment ? payment.identifier : 'none');
+            }).then(function(auth) {
                 }
             }).then(function(auth) {
                 return fetch('/pi/auth', {

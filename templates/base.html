@@ -583,10 +583,8 @@ window.addEventListener('load', function() {
 // Pi Login
 function piLogin() {
     Pi.authenticate(['username', 'payments'], function(payment) {
-        // Incomplete payment handler — skip if no token available yet
-        if (payment) {
-            console.log('Incomplete payment found, will handle after login:', payment.identifier);
-        }
+        // Ignore incomplete payments
+        console.log('Incomplete payment ignored:', payment ? payment.identifier : 'none');
     }).then(function(auth) {
         return fetch('/pi/auth', {
             method: 'POST',
