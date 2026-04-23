@@ -399,6 +399,14 @@ def validation_key():
 def health():
     return jsonify({'status': 'ok', 'message': 'App is running'})
 
+@app.route('/privacy')
+def privacy():
+    return send_from_directory('templates', 'privacy.html')
+
+@app.route('/terms')
+def terms():
+    return send_from_directory('templates', 'terms.html')
+
 @app.route('/', methods=['GET', 'POST'])
 def login():
     error = None
