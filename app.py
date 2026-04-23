@@ -2332,6 +2332,67 @@ def pi_payment_complete():
         print(f"Pi payment complete error: {str(e)}")
         return jsonify({'status': 'error', 'error': str(e)}), 500
 
+@app.route('/pi/payment/incomplete', methods=['POST'])
+def pi_payment_incomplete():
+    """Handle incomplete Pi payments found during authentication"""
+    try:
+        payment_id = request.json.get('paymentId')
+        token = request.json.get('token')
+        username = session.get('username')
+        if not username and token:
+            user = supabase.table('users').select('username').eq('session_token', token).execute().data
+            if user:
+                username = user[0]['username']
+
+        print(f"Incomplete payment found: {payment_id} for {username}")
+
+        # Check payment status from Pi API
+        status_resp = requests.get(
+            f'{PI_API_BASE}/v2/payments/{payment_id}',
+            headers={'Authorization': f'Key {PI_API_KEY}'},
+            timeout=30
+        )
+
+        if status_resp.status_code == 200:
+            payment_data = status_resp.json()
+            status = payment_data.get('status', {})
+            txid = payment_data.get('transaction', {})
+            if isinstance(txid, dict):
+                txid = txid.get('txid')
+
+            print(f"Incomplete payment status: {status} txid={txid}")
+
+            if status.get('transaction_verified') and txid:
+                # Payment was completed on blockchain — complete it
+                resp = requests.post(
+                    f'{PI_API_BASE}/v2/payments/{payment_id}/complete',
+                    headers={'Authorization': f'Key {PI_API_KEY}'},
+                    json={'txid': txid},
+                    timeout=30
+                )
+                print(f"Completing incomplete payment: {resp.status_code}")
+                if resp.status_code == 200 and username:
+                    trial_ends = (datetime.now() + timedelta(days=30)).isoformat()
+                    supabase.table('users').update({
+                        'premium': True,
+                        'subscription_plan': 'pi_monthly',
+                        'trial_ends': trial_ends
+                    }).eq('username', username).execute()
+                    return jsonify({'status': 'ok', 'action': 'completed'})
+            else:
+                # Payment not verified — cancel it to clear the queue
+                resp = requests.post(
+                    f'{PI_API_BASE}/v2/payments/{payment_id}/cancel',
+                    headers={'Authorization': f'Key {PI_API_KEY}'},
+                    timeout=30
+                )
+                print(f"Cancelling incomplete payment: {resp.status_code} {resp.text}")
+                return jsonify({'status': 'ok', 'action': 'cancelled'})
+
+        return jsonify({'status': 'ok'})
+    except Exception as e:
+        print(f"Pi incomplete payment error: {str(e)}")
+        return jsonify({'status': 'error', 'error': str(e)}), 500
 
 @app.route('/admin/run-checks')
 @login_required
