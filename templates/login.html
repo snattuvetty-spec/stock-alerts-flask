@@ -643,25 +643,9 @@ if (window.Pi) {
         });
         setTimeout(function() {
             if (userTyped) return;
-            
-    }
             Pi.authenticate(['username', 'payments'], function(payment) {
-    if (payment) {
-        // Handle incomplete payment
-        const urlToken = new URLSearchParams(window.location.search).get('t') || '';
-        console.log('Incomplete payment found:', payment.identifier);
-        fetch('/pi/payment/incomplete', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ 
-                paymentId: payment.identifier,
-                token: urlToken
-            })
-        }).then(r => r.json())
-        .then(d => console.log('Incomplete payment handled:', d))
-        .catch(e => console.error('Incomplete payment error:', e));
-    }
-            }).then(function(auth) {
+                if (payment) {
+                    console.log('Incomplete payment ignored during login:', payment.identifier);
                 }
             }).then(function(auth) {
                 return fetch('/pi/auth', {

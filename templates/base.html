@@ -609,53 +609,45 @@ function piSubscribe() {
         alert('Please open this app in Pi Browser.');
         return;
     }
-    // Get token from URL for session fallback
     const urlToken = new URLSearchParams(window.location.search).get('t') || '';
 
-    Pi.authenticate(['username', 'payments'], function(payment) {
-        console.log('Incomplete payment found:', payment);
-    }).then(function(auth) {
-        console.log('Pi auth OK, creating payment...');
-        return Pi.createPayment({
-            amount: 0.01,
-            memo: 'Stock Alerts Pro — Monthly Subscription',
-            metadata: { plan: 'monthly' }
-        }, {
-            onReadyForServerApproval: function(paymentId) {
-                console.log('Ready for approval:', paymentId);
-                fetch('/pi/payment/approve', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ paymentId: paymentId, token: urlToken })
-                }).then(r => r.json()).then(d => console.log('Approve:', d));
-            },
-            onReadyForServerCompletion: function(paymentId, txid) {
-                console.log('Ready for completion:', paymentId, txid);
-                fetch('/pi/payment/complete', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ paymentId: paymentId, txid: txid, token: urlToken })
-                }).then(r => r.json()).then(function(data) {
-                    if (data.status === 'ok') {
-                        alert('🎉 Pi subscription activated!');
-                        window.location.href = '/dashboard?t=' + urlToken;
-                    } else {
-                        alert('Payment error: ' + (data.error || 'Unknown'));
-                    }
-                });
-            },
-            onCancel: function(paymentId) {
-                alert('Payment cancelled.');
-                console.log('Pi payment cancelled:', paymentId);
-            },
-            onError: function(error, payment) {
-                alert('Pi error: ' + JSON.stringify(error));
-                console.error('Pi payment error:', error);
-            }
-        });
-    }).catch(function(err) {
-        alert('Pi auth error: ' + err.message);
-        console.error(err);
+    // Use existing Pi session — no re-authenticate needed
+    Pi.createPayment({
+        amount: 0.01,
+        memo: 'Stock Alerts Pro — Monthly Subscription',
+        metadata: { plan: 'monthly' }
+    }, {
+        onReadyForServerApproval: function(paymentId) {
+            console.log('Ready for approval:', paymentId);
+            fetch('/pi/payment/approve', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ paymentId: paymentId, token: urlToken })
+            }).then(r => r.json()).then(d => console.log('Approve:', d));
+        },
+        onReadyForServerCompletion: function(paymentId, txid) {
+            console.log('Ready for completion:', paymentId, txid);
+            fetch('/pi/payment/complete', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ paymentId: paymentId, txid: txid, token: urlToken })
+            }).then(r => r.json()).then(function(data) {
+                if (data.status === 'ok') {
+                    alert('🎉 Pi subscription activated!');
+                    window.location.href = '/dashboard?t=' + urlToken;
+                } else {
+                    alert('Payment error: ' + (data.error || 'Unknown'));
+                }
+            });
+        },
+        onCancel: function(paymentId) {
+            alert('Payment cancelled.');
+            console.log('Pi payment cancelled:', paymentId);
+        },
+        onError: function(error, payment) {
+            alert('Pi error: ' + JSON.stringify(error));
+            console.error('Pi payment error:', error);
+        }
     });
 }
 </script>
