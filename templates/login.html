@@ -634,7 +634,7 @@ document.querySelector('form').addEventListener('submit', function() {
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 <script>
 if (window.Pi) {
-    Pi.init({ version: "2.0", sandbox: false });
+    Pi.init({ version: "2.0", sandbox: true });
     var userTyped = false;
     document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('input').forEach(function(inp) {

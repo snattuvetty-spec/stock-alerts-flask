@@ -580,15 +580,12 @@ window.addEventListener('load', function() {
 });
 
 // Pi Login
+// Pi Login
 function piLogin() {
     Pi.authenticate(['username', 'payments'], function(payment) {
-        // Incomplete payment — complete it after login
+        // Incomplete payment handler — skip if no token available yet
         if (payment) {
-            fetch('/pi/payment/complete', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ paymentId: payment.identifier })
-            });
+            console.log('Incomplete payment found, will handle after login:', payment.identifier);
         }
     }).then(function(auth) {
         return fetch('/pi/auth', {
@@ -599,14 +596,12 @@ function piLogin() {
     }).then(function(res) { return res.json(); })
     .then(function(data) {
         if (data.status === 'ok') {
-            // Redirect with token so session persists
             window.location.href = '/dashboard?t=' + data.token;
         } else {
             alert('Pi login failed: ' + (data.error || 'Unknown error'));
         }
     }).catch(function(err) {
         console.error('Pi login error:', err);
-        alert('Pi login error: ' + err.message);
     });
 }
 
