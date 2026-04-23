@@ -360,6 +360,7 @@ def login_required(f):
                     session['premium'] = user[0].get('premium', False)
                     session['trial_ends'] = user[0].get('trial_ends', '')
                     session['session_token'] = url_token
+                    session['login_method'] = 'pi' if user[0].get('pi_uid') else 'password'
                     session.permanent = True
                     print(f"login_required: restored session from URL token for {user[0]['username']}")
             except Exception as e:
@@ -421,6 +422,7 @@ def login():
                         session['premium'] = user.get('premium', False)
                         session['trial_ends'] = user.get('trial_ends', '')
                         session['session_token'] = token
+                        session['login_method'] = 'password'
                         # Log login event to history
                         try:
                             supabase.table('login_history').insert({
@@ -2181,6 +2183,7 @@ def pi_auth():
         session['premium'] = user.get('premium', False)
         session['trial_ends'] = user.get('trial_ends', '')
         session['session_token'] = token
+        session['login_method'] = 'pi'
 
         print(f"✅ Pi login OK: {user['username']} (pi_uid={pi_uid})")
         return jsonify({'status': 'ok', 'username': user['username'], 'token': token})

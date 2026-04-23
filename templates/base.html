@@ -583,21 +583,8 @@ window.addEventListener('load', function() {
 // Pi Login
 function piLogin() {
     Pi.authenticate(['username', 'payments'], function(payment) {
-    if (payment) {
-        // Handle incomplete payment
-        const urlToken = new URLSearchParams(window.location.search).get('t') || '';
-        console.log('Incomplete payment found:', payment.identifier);
-        fetch('/pi/payment/incomplete', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ 
-                paymentId: payment.identifier,
-                token: urlToken
-            })
-        }).then(r => r.json())
-        .then(d => console.log('Incomplete payment handled:', d))
-        .catch(e => console.error('Incomplete payment error:', e));
-    }
+        // Ignore incomplete payments
+        console.log('Incomplete payment ignored:', payment ? payment.identifier : 'none');
     }).then(function(auth) {
         return fetch('/pi/auth', {
             method: 'POST',
@@ -624,11 +611,9 @@ function piSubscribe() {
     }
     const urlToken = new URLSearchParams(window.location.search).get('t') || '';
 
-    // Must authenticate first to get fresh Pi session
     Pi.authenticate(['username', 'payments'], function(incompletePayment) {
-        // Handle any incomplete payment first
         if (incompletePayment) {
-            console.log('Incomplete payment found, cancelling:', incompletePayment.identifier);
+            console.log('Incomplete payment found, handling:', incompletePayment.identifier);
             fetch('/pi/payment/incomplete', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -637,14 +622,12 @@ function piSubscribe() {
         }
     }).then(function(auth) {
         console.log('Pi auth OK, creating payment...');
-        // Small delay to ensure incomplete payment is handled
         return new Promise(function(resolve) {
-            setTimeout(function() { resolve(auth); }, 1000);
+            setTimeout(function() { resolve(auth); }, 500);
         });
-        
     }).then(function() {
         Pi.createPayment({
-            amount: 0.01,
+            amount: 0.10,
             memo: 'Stock Alerts Pro — Monthly Subscription',
             metadata: { plan: 'monthly' }
         }, {

@@ -88,16 +88,16 @@
             🎁 Free Trial — {{ days_left }} day{{ 's' if days_left != 1 else '' }} left ▾
         </button>
         {% endif %}
+        {% if session.login_method == 'pi' %}
+        <button onclick="piSubscribe()"
+                style="background:linear-gradient(135deg,#7B3FE4,#A855F7);color:white;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;border:none;cursor:pointer;">
+            π Pay with Pi
+        </button>
+        {% else %}
         <a href="/settings" style="background:#f39c12;color:white;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;text-decoration:none;">
             ⭐ Upgrade to Premium
         </a>
-        <!-- Pi Payment — only visible in Pi Browser -->
-        <button id="pi-subscribe-btn" onclick="piSubscribe()"
-                style="display:none;background:linear-gradient(135deg,#7B3FE4,#A855F7);color:white;
-                       padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;border:none;cursor:pointer;">
-            π Pay with Pi
-        </button>
-        <script>if(window.Pi)document.getElementById('pi-subscribe-btn').style.display='inline-block';</script>
+        {% endif %}
     {% else %}
         <button onclick="document.getElementById('subModal').classList.add('active')"
                 style="background:#27ae60;color:white;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;border:none;cursor:pointer;">
