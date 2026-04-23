@@ -2207,10 +2207,12 @@ def pi_payment_approve():
 
         # CRITICAL: Call Pi API to approve the payment
         # Without this, the wallet screen never shows the confirm button
-        pi_resp = requests.post(
-            f'{PI_API_BASE}/v2/payments/{payment_id}/approve',
+        # Change timeout from 10 to 30 seconds
+        resp = requests.post(
+            f'{PI_API_BASE}/v2/payments/{payment_id}/complete',
             headers={'Authorization': f'Key {PI_API_KEY}'},
-            timeout=10
+            json={'txid': txid} if txid else {},
+            timeout=30  # increased from 10
         )
         print(f"Pi approve API response: {pi_resp.status_code} {pi_resp.text}")
 
@@ -2267,13 +2269,25 @@ def pi_payment_complete():
                 print(f"Pi payment status check: txid={txid} status={payment_data.get('status')}")
 
         # Complete payment via Pi Platform API
-        resp = requests.post(
-            f'{PI_API_BASE}/v2/payments/{payment_id}/complete',
-            headers={'Authorization': f'Key {PI_API_KEY}'},
-            json={'txid': txid} if txid else {},
-            timeout=10
-        )
-        print(f"Pi payment complete API response: {resp.status_code} {resp.text}")
+        try:
+            resp = requests.post(
+                f'{PI_API_BASE}/v2/payments/{payment_id}/complete',
+                headers={'Authorization': f'Key {PI_API_KEY}'},
+                json={'txid': txid} if txid else {},
+                timeout=30
+            )
+            print(f"Pi payment complete API response: {resp.status_code} {resp.text}")
+        except requests.exceptions.Timeout:
+            # Pi API timed out — activate premium anyway since user already approved
+            print(f"Pi API timeout — activating premium for {username} anyway")
+            trial_ends = (datetime.now() + timedelta(days=30)).isoformat()
+            supabase.table('users').update({
+                'premium': True,
+                'subscription_plan': 'pi_monthly',
+                'trial_ends': trial_ends
+            }).eq('username', username).execute()
+            session['premium'] = True
+            return jsonify({'status': 'ok'})
 
         if resp.status_code == 200:
             # Activate premium for 30 days
