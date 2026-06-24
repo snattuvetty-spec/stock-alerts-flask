@@ -715,7 +715,7 @@ function piLogin() {
         }).catch(function(e) { console.warn('Incomplete handler:', e); });
     }
 
-    Pi.authenticate(['username', 'payments'], onIncompletePayment)
+    Pi.authenticate(['username'], onIncompletePayment)
         .then(function(auth) {
             if (!auth || !auth.accessToken) throw new Error('No access token returned from Pi');
             return fetch('/pi/auth', {

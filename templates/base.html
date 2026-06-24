@@ -621,46 +621,64 @@ function piSubscribe() {
     }
     const piToken = window.sapToken || sessionStorage.getItem('sap_token') || '';
 
-    // Do NOT re-authenticate here — user is already authenticated from login.
-    // Calling Pi.authenticate() again before Pi.createPayment() creates a
-    // mismatched session and causes payment_not_found on the approve call.
-    Pi.createPayment({
-        amount: 0.10,
-        memo: 'Stock Alerts Pro — Monthly Subscription',
-        metadata: { plan: 'monthly' }
-    }, {
-        onReadyForServerApproval: function(paymentId) {
-            console.log('Ready for approval:', paymentId);
-            fetch('/pi/payment/approve', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ paymentId: paymentId, token: piToken })
-            }).then(r => r.json()).then(d => console.log('Approve:', d))
-              .catch(e => console.error('Approve error:', e));
-        },
-        onReadyForServerCompletion: function(paymentId, txid) {
-            console.log('Ready for completion:', paymentId, txid);
-            fetch('/pi/payment/complete', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ paymentId: paymentId, txid: txid, token: piToken })
-            }).then(r => r.json()).then(function(data) {
-                if (data.status === 'ok') {
-                    alert('🎉 Pi subscription activated!');
-                    window.location.href = '/dashboard?t=' + piToken;
-                } else {
-                    alert('Payment error: ' + (data.error || 'Unknown'));
-                }
-            });
-        },
-        onCancel: function(paymentId) {
-            console.log('Payment cancelled:', paymentId);
-            alert('Payment cancelled.');
-        },
-        onError: function(error, payment) {
-            console.error('Pi payment error:', error, payment);
-            alert('Pi payment error: ' + JSON.stringify(error));
-        }
+    // Pi SDK requires authenticate() with 'payments' scope before each payment.
+    // This is separate from the login auth — it activates the payment context.
+    // We handle incomplete payments here too (required by Pi SDK).
+    function onIncompletePaymentFound(payment) {
+        if (!payment) return;
+        console.log('Incomplete payment found before subscribe:', payment.identifier);
+        fetch('/pi/payment/incomplete', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ paymentId: payment.identifier, token: piToken })
+        }).catch(e => console.warn('Incomplete handler error:', e));
+    }
+
+    Pi.authenticate(['username', 'payments'], onIncompletePaymentFound)
+    .then(function() {
+        // Auth succeeded — now create the payment
+        Pi.createPayment({
+            amount: 0.10,
+            memo: 'Stock Alerts Pro — Monthly Subscription',
+            metadata: { plan: 'monthly' }
+        }, {
+            onReadyForServerApproval: function(paymentId) {
+                console.log('Ready for approval:', paymentId);
+                fetch('/pi/payment/approve', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ paymentId: paymentId, token: piToken })
+                }).then(r => r.json()).then(d => console.log('Approve:', d))
+                  .catch(e => console.error('Approve error:', e));
+            },
+            onReadyForServerCompletion: function(paymentId, txid) {
+                console.log('Ready for completion:', paymentId, txid);
+                fetch('/pi/payment/complete', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ paymentId: paymentId, txid: txid, token: piToken })
+                }).then(r => r.json()).then(function(data) {
+                    if (data.status === 'ok') {
+                        alert('🎉 Pi subscription activated!');
+                        window.location.href = '/dashboard?t=' + piToken;
+                    } else {
+                        alert('Payment error: ' + (data.error || 'Unknown'));
+                    }
+                });
+            },
+            onCancel: function(paymentId) {
+                console.log('Payment cancelled:', paymentId);
+                alert('Payment cancelled.');
+            },
+            onError: function(error, payment) {
+                console.error('Pi payment error:', error, payment);
+                alert('Pi payment error: ' + JSON.stringify(error));
+            }
+        });
+    })
+    .catch(function(err) {
+        console.error('Pi auth error before payment:', err);
+        alert('Pi authentication failed. Please try again.');
     });
 }
 </script>
