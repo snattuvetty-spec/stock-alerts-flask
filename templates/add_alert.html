@@ -223,6 +223,16 @@ function selectStock(symbol, name, exchange, price, currency) {
     document.getElementById('selectedStockInfo').textContent = `${exchange} • Current Price: ${currency} ${sym}${price.toFixed(2)}`;
     document.getElementById('search-step').style.display = 'none';
     document.getElementById('alertForm').style.display = 'block';
+    // Inject session token into form when it becomes visible (Pi Browser session fix)
+    const form = document.getElementById('alertForm');
+    if (!form.querySelector('input[name="t"]')) {
+        const tok = window.sapToken || sessionStorage.getItem('sap_token') || '';
+        if (tok) {
+            const h = document.createElement('input');
+            h.type = 'hidden'; h.name = 't'; h.value = tok;
+            form.appendChild(h);
+        }
+    }
 }
 
 function resetForm() {

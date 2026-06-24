@@ -569,13 +569,18 @@ function dismissInstallBanner() {
 <script>
 // Show Pi Login button only inside Pi Browser
 function isPiBrowser() {
-    return window.Pi !== undefined;
+    return typeof window.Pi !== 'undefined' && typeof window.Pi.nativeFeaturesList !== 'undefined';
 }
 
 window.addEventListener('load', function() {
     if (isPiBrowser()) {
         const btn = document.getElementById('pi-login-btn');
         if (btn) { btn.style.display = 'inline-flex'; }
+    }
+    // Hide Pi login button in non-Pi browsers even if SDK loaded
+    else {
+        const btn = document.getElementById('pi-login-btn');
+        if (btn) { btn.style.display = 'none'; }
     }
 });
 
@@ -605,7 +610,7 @@ function piLogin() {
 
 // Pi Subscription Payment
 function piSubscribe() {
-    if (!window.Pi) {
+    if (!isPiBrowser()) {
         alert('Please open this app in Pi Browser.');
         return;
     }
