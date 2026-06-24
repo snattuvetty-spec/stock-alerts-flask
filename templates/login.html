@@ -682,7 +682,12 @@ document.querySelector('form').addEventListener('submit', function() {
 <script>
 // ── Show Pi section only inside Pi Browser ──
 // Only show Pi section when actually inside Pi Browser (not just when SDK loads in regular browser)
-var isPiBrowser = typeof window.Pi !== 'undefined' && typeof window.Pi.nativeFeaturesList !== 'undefined';
+// Pi Browser UA lacks Safari/ and Version/ that all regular browsers include
+var isPiBrowser = (function() {
+    var ua = navigator.userAgent;
+    var isRegularBrowser = ua.indexOf('Safari/') !== -1 || ua.indexOf('Version/') !== -1 || ua.indexOf('Chrome/') !== -1;
+    return !isRegularBrowser && typeof window.Pi !== 'undefined';
+})();
 if (isPiBrowser) {
     Pi.init({ version: "2.0", sandbox: true });
     document.getElementById('pi-section').style.display = 'block';

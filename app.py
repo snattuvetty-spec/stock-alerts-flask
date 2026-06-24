@@ -897,6 +897,10 @@ def add_alert():
                     'type': alert_type,
                     'enabled': True
                 }).execute()
+                # JS redirect preserves ?t=TOKEN for Pi Browser session
+                token = request.args.get('t') or request.form.get('t') or ''
+                if token:
+                    return f'<html><body><script>window.location.href="/dashboard?t={token}";</script><p>Redirecting...</p></body></html>'
                 return redirect(url_for('dashboard'))
             except Exception as e:
                 error = f"Error: {str(e)}"

@@ -569,7 +569,12 @@ function dismissInstallBanner() {
 <script>
 // Show Pi Login button only inside Pi Browser
 function isPiBrowser() {
-    return typeof window.Pi !== 'undefined' && typeof window.Pi.nativeFeaturesList !== 'undefined';
+    // Pi Browser UA lacks "Safari/" and "Version/" that all regular browsers include
+    var ua = navigator.userAgent;
+    var hasNoPiBrowserUA = ua.indexOf('Safari/') !== -1 || ua.indexOf('Version/') !== -1 || ua.indexOf('Chrome/') !== -1;
+    if (hasNoPiBrowserUA) return false;
+    // Also confirm Pi SDK is present
+    return typeof window.Pi !== 'undefined';
 }
 
 window.addEventListener('load', function() {
