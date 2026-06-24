@@ -689,7 +689,7 @@ var isPiBrowser = (function() {
     return !isRegularBrowser && typeof window.Pi !== 'undefined';
 })();
 if (isPiBrowser) {
-    Pi.init({ version: "2.0", sandbox: false });
+    Pi.init({ version: "2.0", sandbox: true });
     document.getElementById('pi-section').style.display = 'block';
     document.getElementById('standard-section').style.display = 'none';
 }
@@ -715,7 +715,7 @@ function piLogin() {
         }).catch(function(e) { console.warn('Incomplete handler:', e); });
     }
 
-    Pi.authenticate(['username'], onIncompletePayment)
+    Pi.authenticate(['username', 'payments'], onIncompletePayment)
         .then(function(auth) {
             if (!auth || !auth.accessToken) throw new Error('No access token returned from Pi');
             return fetch('/pi/auth', {

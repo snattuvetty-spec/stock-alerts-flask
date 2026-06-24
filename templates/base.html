@@ -17,7 +17,7 @@
 
     <!-- Pi Network SDK -->
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-    <script>Pi.init({ version: "2.0", sandbox: false })</script>
+    <script>Pi.init({ version: "2.0", sandbox: true })</script>
     
     <!-- App Icons -->
     <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png">
@@ -621,23 +621,9 @@ function piSubscribe() {
     }
     const piToken = window.sapToken || sessionStorage.getItem('sap_token') || '';
 
-    // Pi SDK requires authenticate() with 'payments' scope before each payment.
-    // This is separate from the login auth — it activates the payment context.
-    // We handle incomplete payments here too (required by Pi SDK).
-    function onIncompletePaymentFound(payment) {
-        if (!payment) return;
-        console.log('Incomplete payment found before subscribe:', payment.identifier);
-        fetch('/pi/payment/incomplete', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ paymentId: payment.identifier, token: piToken })
-        }).catch(e => console.warn('Incomplete handler error:', e));
-    }
-
-    Pi.authenticate(['username', 'payments'], onIncompletePaymentFound)
-    .then(function() {
-        // Auth succeeded — now create the payment
-        Pi.createPayment({
+    // User already authenticated with ['username','payments'] scope at login.
+    // Call Pi.createPayment() directly — no re-authentication needed.
+    Pi.createPayment({
             amount: 0.10,
             memo: 'Stock Alerts Pro — Monthly Subscription',
             metadata: { plan: 'monthly' }
@@ -675,10 +661,6 @@ function piSubscribe() {
                 alert('Pi payment error: ' + JSON.stringify(error));
             }
         });
-    })
-    .catch(function(err) {
-        console.error('Pi auth error before payment:', err);
-        alert('Pi authentication failed. Please try again.');
     });
 }
 </script>
