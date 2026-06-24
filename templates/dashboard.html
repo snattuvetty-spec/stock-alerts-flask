@@ -352,7 +352,8 @@
                 const save = async () => {
                     const newValue = parseFloat(input.value);
                     if (newValue && newValue > 0) {
-                        const response = await fetch(`/api/update_alert/${alertId}`, {
+                        const _tok1 = window.sapToken || sessionStorage.getItem('sap_token') || '';
+                        const response = await fetch(`/api/update_alert/${alertId}?t=${_tok1}`, {
                             method: 'POST',
                             headers: {'Content-Type': 'application/json'},
                             body: JSON.stringify({target: newValue})
@@ -379,7 +380,8 @@
                 // Toggle type above/below
                 const newType = currentValue === 'above' ? 'below' : 'above';
                 
-                fetch(`/api/update_alert/${alertId}`, {
+                const _tok2 = window.sapToken || sessionStorage.getItem('sap_token') || '';
+                fetch(`/api/update_alert/${alertId}?t=${_tok2}`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({type: newType})

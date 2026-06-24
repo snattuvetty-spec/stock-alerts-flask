@@ -510,7 +510,8 @@ function safeId(ticker) { return ticker.replace(/=/g, '_'); }
 async function fetchForex(ticker) {
     const id = safeId(ticker);
     try {
-        const res  = await fetch(`/price/${encodeURIComponent(ticker)}`);
+        const _t = window.sapToken || sessionStorage.getItem('sap_token') || '';
+        const res  = await fetch(`/price/${encodeURIComponent(ticker)}?t=${_t}`);
         const data = await res.json();
         const skelEl   = document.getElementById(`skel-${id}`);
         const priceEl  = document.getElementById(`price-${id}`);
@@ -560,7 +561,8 @@ async function lookupCustom() {
     result.style.display = 'block';
     result.innerHTML = '<span style="color:rgba(255,255,255,0.4);font-size:13px;">⏳ Fetching rate...</span>';
     try {
-        const res  = await fetch(`/price/${encodeURIComponent(ticker)}`);
+        const _t = window.sapToken || sessionStorage.getItem('sap_token') || '';
+        const res  = await fetch(`/price/${encodeURIComponent(ticker)}?t=${_t}`);
         const data = await res.json();
         if (data.price) {
             const p = parseFloat(data.price);
@@ -662,7 +664,7 @@ function openModal(ticker, label) {
         rateEl.textContent = live > 100 ? live.toFixed(2) : live.toFixed(4);
     } else {
         rateEl.textContent = 'Loading...';
-        fetch(`/price/${encodeURIComponent(ticker)}`).then(r => r.json()).then(d => {
+        fetch(`/price/${encodeURIComponent(ticker)}?t=${window.sapToken || sessionStorage.getItem('sap_token') || ''}`).then(r => r.json()).then(d => {
             if (d.price) { livePrices[ticker] = d.price; rateEl.textContent = d.price > 100 ? parseFloat(d.price).toFixed(2) : parseFloat(d.price).toFixed(4); }
         });
     }
@@ -691,6 +693,8 @@ async function saveAlert() {
         fd.append('target', target);
         fd.append('alert_type', direction);
         fd.append('label', label);
+        const _ta = window.sapToken || sessionStorage.getItem('sap_token') || '';
+        fd.append('t', _ta);
         const res  = await fetch('/forex/add_alert', { method: 'POST', body: fd });
         const data = await res.json();
         if (data.success) { closeModal(); location.reload(); }
@@ -708,7 +712,8 @@ async function saveAlert() {
 async function deleteAlert(alertId) {
     if (!confirm('Delete this forex alert?')) return;
     try {
-        const res  = await fetch(`/forex/delete_alert/${alertId}`, { method: 'POST' });
+        const _td = window.sapToken || sessionStorage.getItem('sap_token') || '';
+        const res  = await fetch(`/forex/delete_alert/${alertId}?t=${_td}`, { method: 'POST' });
         const data = await res.json();
         if (data.success) {
             const row = document.getElementById(`alertrow-${alertId}`);
@@ -725,7 +730,7 @@ async function deleteAlert(alertId) {
 async function toggleAlert(alertId, currentlyEnabled) {
     const newState = !currentlyEnabled;
     try {
-        await fetch(`/forex/toggle_alert/${alertId}`, {
+        await fetch(`/forex/toggle_alert/${alertId}?t=${window.sapToken || sessionStorage.getItem('sap_token') || ''}`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({enabled: newState})
@@ -783,7 +788,8 @@ async function confirmAddPair() {
 
     // Verify ticker is valid by fetching price
     try {
-        const res  = await fetch(`/price/${encodeURIComponent(ticker)}`);
+        const _t = window.sapToken || sessionStorage.getItem('sap_token') || '';
+        const res  = await fetch(`/price/${encodeURIComponent(ticker)}?t=${_t}`);
         const data = await res.json();
         if (!data.price) {
             errEl.textContent = `❌ Could not find rate for ${ticker}. Check the symbol and try again.`;
@@ -795,7 +801,7 @@ async function confirmAddPair() {
         const flag  = ticker.replace('=X','').substring(0,3);
         const name  = label;
 
-        const saveRes  = await fetch('/forex/pairs/save', {
+        const saveRes  = await fetch('/forex/pairs/save?t=' + (window.sapToken || sessionStorage.getItem('sap_token') || ''), {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ action: 'add', ticker, label, flag, name })
@@ -864,7 +870,7 @@ async function removePair(ticker, btnEl) {
     card.style.opacity = '0.4';
     card.style.pointerEvents = 'none';
     try {
-        const res  = await fetch('/forex/pairs/save', {
+        const res  = await fetch('/forex/pairs/save?t=' + (window.sapToken || sessionStorage.getItem('sap_token') || ''), {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ action: 'remove', ticker })
@@ -889,7 +895,7 @@ async function resetToDefaults() {
     if (!confirm('Reset Major Pairs to default? Your alerts will NOT be deleted.')) return;
     btn.textContent = '⏳ Resetting...'; btn.disabled = true;
     try {
-        const res  = await fetch('/forex/pairs/reset', { method: 'POST' });
+        const res  = await fetch('/forex/pairs/reset?t=' + (window.sapToken || sessionStorage.getItem('sap_token') || ''), { method: 'POST' });
         const data = await res.json();
         if (data.success) {
             location.reload();
