@@ -349,8 +349,12 @@ def login_required(f):
     import time
     @wraps(f)
     def decorated(*args, **kwargs):
-        # Check URL token first (Pi Browser fallback)
-        url_token = request.args.get('t')
+        # Check URL token first (Pi Browser fallback) — covers GET params, POST forms, and JSON body
+        url_token = (
+            request.args.get('t') or
+            request.form.get('t') or
+            (request.get_json(silent=True) or {}).get('t')
+        )
         if url_token and 'username' not in session:
             try:
                 user = supabase.table('users').select('*').eq('session_token', url_token).execute().data

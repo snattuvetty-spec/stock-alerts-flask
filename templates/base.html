@@ -609,7 +609,8 @@ function piSubscribe() {
         alert('Please open this app in Pi Browser.');
         return;
     }
-    const urlToken = new URLSearchParams(window.location.search).get('t') || '';
+    // Use sapToken set by token propagation script (covers sessionStorage + URL)
+    const piToken = window.sapToken || sessionStorage.getItem('sap_token') || '';
 
     Pi.authenticate(['username', 'payments'], function(incompletePayment) {
         if (incompletePayment) {
@@ -617,7 +618,7 @@ function piSubscribe() {
             fetch('/pi/payment/incomplete', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ paymentId: incompletePayment.identifier, token: urlToken })
+                body: JSON.stringify({ paymentId: incompletePayment.identifier, token: piToken })
             }).catch(e => console.error(e));
         }
     }).then(function(auth) {
@@ -636,7 +637,7 @@ function piSubscribe() {
                 fetch('/pi/payment/approve', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ paymentId: paymentId, token: urlToken })
+                    body: JSON.stringify({ paymentId: paymentId, token: piToken })
                 }).then(r => r.json()).then(d => console.log('Approve:', d));
             },
             onReadyForServerCompletion: function(paymentId, txid) {
@@ -644,11 +645,11 @@ function piSubscribe() {
                 fetch('/pi/payment/complete', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ paymentId: paymentId, txid: txid, token: urlToken })
+                    body: JSON.stringify({ paymentId: paymentId, txid: txid, token: piToken })
                 }).then(r => r.json()).then(function(data) {
                     if (data.status === 'ok') {
                         alert('🎉 Pi subscription activated!');
-                        window.location.href = '/dashboard?t=' + urlToken;
+                        window.location.href = '/dashboard?t=' + piToken;
                     } else {
                         alert('Payment error: ' + (data.error || 'Unknown'));
                     }
@@ -667,6 +668,50 @@ function piSubscribe() {
         console.error(err);
     });
 }
+</script>
+
+<!-- ============================================================
+     TOKEN PROPAGATION — Pi Browser session fix
+     Picks up ?t=TOKEN from URL, saves to sessionStorage, then
+     rewrites all internal links and forms to carry the token.
+     This keeps the session alive across every page navigation
+     in Pi Browser where cookies are blocked.
+     ============================================================ -->
+<script>
+(function () {
+  var urlParams = new URLSearchParams(window.location.search);
+  var urlToken  = urlParams.get('t');
+  if (urlToken) sessionStorage.setItem('sap_token', urlToken);
+  var token = urlToken || sessionStorage.getItem('sap_token') || '';
+  window.sapToken = token;
+  if (!token) return;
+
+  function patchLinks() {
+    document.querySelectorAll('a[href]').forEach(function (a) {
+      var href = a.getAttribute('href');
+      if (!href || href.startsWith('http') || href.startsWith('//') ||
+          href.startsWith('#') || href.startsWith('mailto') ||
+          href.startsWith('tel') || href.indexOf('t=' + token) !== -1) return;
+      a.setAttribute('href', href + (href.indexOf('?') !== -1 ? '&' : '?') + 't=' + token);
+    });
+  }
+
+  function patchForms() {
+    document.querySelectorAll('form').forEach(function (f) {
+      if (f.querySelector('input[name="t"]')) return;
+      var h = document.createElement('input');
+      h.type = 'hidden'; h.name = 't'; h.value = token;
+      f.appendChild(h);
+    });
+  }
+
+  patchLinks();
+  patchForms();
+
+  // Re-run for dynamically injected content (modals, etc.)
+  new MutationObserver(function () { patchLinks(); patchForms(); })
+    .observe(document.body, { childList: true, subtree: true });
+})();
 </script>
 
 {% if session.username %}

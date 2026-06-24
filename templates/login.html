@@ -634,37 +634,82 @@ document.querySelector('form').addEventListener('submit', function() {
 <!-- Pi Network SDK + Auto Login -->
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 <script>
-if (window.Pi) {
-    Pi.init({ version: "2.0", sandbox: true });
-    var userTyped = false;
-    document.addEventListener('DOMContentLoaded', function() {
-        document.querySelectorAll('input').forEach(function(inp) {
-            inp.addEventListener('focus', function() { userTyped = true; });
-            inp.addEventListener('keydown', function() { userTyped = true; });
-        });
-        setTimeout(function() {
-            if (userTyped) return;
-            Pi.authenticate(['username', 'payments'], function(payment) {
-                if (payment) {
-                    console.log('Incomplete payment ignored during login:', payment.identifier);
-                }
-            }).then(function(auth) {
-                return fetch('/pi/auth', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ access_token: auth.accessToken })
-                });
-            }).then(function(res) { return res.json(); })
-            .then(function(data) {
-                if (data.status === 'ok') {
-                    window.location.href = '/dashboard?t=' + data.token;
-                }
-            }).catch(function(err) {
-                console.error('Pi auto-login error:', err);
-            });
-        }, 1500);
+(function () {
+  // Only run inside Pi Browser
+  if (typeof window.Pi === 'undefined') return;
+
+  Pi.init({ version: "2.0", sandbox: true });
+
+  // --- Show Pi loading overlay immediately, hide password form ---
+  var form = document.querySelector('form');
+  var card = document.querySelector('.auth-card');
+
+  var overlay = document.createElement('div');
+  overlay.id = 'pi-loading';
+  overlay.style.cssText = [
+    'background:rgba(255,255,255,0.06)',
+    'border:1px solid rgba(108,63,197,0.4)',
+    'border-radius:16px',
+    'padding:28px 24px',
+    'text-align:center',
+    'color:#fff',
+    'margin-bottom:16px'
+  ].join(';');
+  overlay.innerHTML = [
+    '<div style="font-size:36px;margin-bottom:12px">π</div>',
+    '<div style="font-size:16px;font-weight:700;margin-bottom:6px">Signing in with Pi...</div>',
+    '<div style="font-size:13px;color:rgba(255,255,255,0.55)">Please wait while we verify your Pi account</div>',
+    '<div style="margin-top:16px;display:inline-block;width:32px;height:32px;',
+    'border:3px solid rgba(255,255,255,0.15);border-top-color:#a78bfa;',
+    'border-radius:50%;animation:piSpin 0.8s linear infinite"></div>',
+    '<style>@keyframes piSpin{to{transform:rotate(360deg)}}</style>'
+  ].join('');
+
+  if (card) {
+    card.insertBefore(overlay, card.firstChild);
+    if (form) form.style.display = 'none';
+  }
+
+  function showFallback(reason) {
+    console.warn('Pi auto-login failed:', reason);
+    overlay.remove();
+    if (form) form.style.display = '';
+  }
+
+  // --- Incomplete payment handler ---
+  function onIncompletePayment(payment) {
+    if (!payment) return;
+    console.log('Incomplete payment during login:', payment.identifier);
+    fetch('/pi/payment/incomplete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paymentId: payment.identifier, token: '' })
+    }).catch(function (e) { console.warn('Incomplete handler error:', e); });
+  }
+
+  // --- Run Pi.authenticate() immediately ---
+  Pi.authenticate(['username', 'payments'], onIncompletePayment)
+    .then(function (auth) {
+      if (!auth || !auth.accessToken) throw new Error('No accessToken');
+      return fetch('/pi/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ access_token: auth.accessToken })
+      });
+    })
+    .then(function (res) { return res.json(); })
+    .then(function (data) {
+      if (data.status === 'ok' && data.token) {
+        sessionStorage.setItem('sap_token', data.token);
+        window.location.href = '/dashboard?t=' + data.token;
+      } else {
+        showFallback(data.error || 'auth failed');
+      }
+    })
+    .catch(function (err) {
+      showFallback(err.message || err);
     });
-}
+})();
 </script>
 </body>
 </html>
