@@ -615,15 +615,39 @@ function piLogin() {
 
 // Pi Subscription Payment
 function piSubscribe() {
+    // Debug: show what's happening visibly on screen
+    var dbg = document.createElement('div');
+    dbg.style.cssText = 'position:fixed;top:60px;left:10px;right:10px;background:#333;color:#fff;padding:12px;border-radius:8px;z-index:9999;font-size:13px;';
+    var piOk = typeof window.Pi !== 'undefined';
+    var ua = navigator.userAgent;
+    var hasSafari = ua.indexOf('Safari/') !== -1;
+    var hasVersion = ua.indexOf('Version/') !== -1;
+    var hasChrome = ua.indexOf('Chrome/') !== -1;
+    dbg.textContent = 'Pi:' + piOk + ' Safari/:' + hasSafari + ' Version/:' + hasVersion + ' Chrome/:' + hasChrome + ' isPi:' + isPiBrowser();
+    document.body.appendChild(dbg);
+    setTimeout(function(){ dbg.remove(); }, 8000);
+
     if (!isPiBrowser()) {
-        alert('Please open this app in Pi Browser.');
         return;
     }
     const piToken = window.sapToken || sessionStorage.getItem('sap_token') || '';
 
-    // User already authenticated with ['username','payments'] scope at login.
-    // Call Pi.createPayment() directly — no re-authentication needed.
-    Pi.createPayment({
+    // Must authenticate with payments scope before Pi.createPayment()
+    // Pi SDK requires this even if already logged in
+    Pi.authenticate(['username', 'payments'], function(incompletePayment) {
+        if (incompletePayment) {
+            console.log('Incomplete payment:', incompletePayment.identifier);
+            fetch('/pi/payment/incomplete', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ paymentId: incompletePayment.identifier, token: piToken })
+            }).catch(e => console.warn(e));
+        }
+    }).then(function(auth) {
+        if (!auth) { alert('Pi authentication failed.'); return; }
+        console.log('Pi auth OK for payment, creating payment...');
+
+        Pi.createPayment({
             amount: 0.10,
             memo: 'Stock Alerts Pro — Monthly Subscription',
             metadata: { plan: 'monthly' }
@@ -634,7 +658,7 @@ function piSubscribe() {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ paymentId: paymentId, token: piToken })
-                }).then(r => r.json()).then(d => console.log('Approve:', d))
+                }).then(r => r.json()).then(d => console.log('Approve result:', d))
                   .catch(e => console.error('Approve error:', e));
             },
             onReadyForServerCompletion: function(paymentId, txid) {
@@ -658,9 +682,13 @@ function piSubscribe() {
             },
             onError: function(error, payment) {
                 console.error('Pi payment error:', error, payment);
-                alert('Pi payment error: ' + JSON.stringify(error));
+                alert('Pi error: ' + JSON.stringify(error));
             }
         });
+    }).catch(function(err) {
+        console.error('Pi auth error:', err);
+        alert('Pi auth error: ' + (err.message || JSON.stringify(err)));
+    });
 }
 </script>
 
