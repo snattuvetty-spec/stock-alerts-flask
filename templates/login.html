@@ -638,7 +638,7 @@ document.querySelector('form').addEventListener('submit', function() {
   // Only run inside Pi Browser
   if (typeof window.Pi === 'undefined') return;
 
-  Pi.init({ version: "2.0", sandbox: true });
+  Pi.init({ version: "2.0", sandbox: false });
 
   // --- Show Pi loading overlay immediately, hide password form ---
   var form = document.querySelector('form');
