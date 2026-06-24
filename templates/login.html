@@ -204,6 +204,37 @@
         /* Error */
         .alert-error { background: rgba(231,76,60,0.15); border: 1px solid rgba(231,76,60,0.4); color: #ff8a80; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 16px; }
 
+        /* Pi Login Button */
+        .btn-pi {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #6c3fc5, #9b59b6);
+            color: white;
+            font-size: 17px;
+            font-weight: 700;
+            font-family: 'Syne', sans-serif;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 4px 24px rgba(108,63,197,0.5);
+            letter-spacing: 0.3px;
+        }
+        .btn-pi:hover { transform: translateY(-1px); box-shadow: 0 8px 32px rgba(108,63,197,0.7); }
+        .btn-pi:active { transform: translateY(0); }
+        .pi-symbol { font-size: 22px; font-weight: 900; line-height: 1; }
+        .pi-section { display: none; }
+        .pi-note {
+            text-align: center;
+            font-size: 12px;
+            color: rgba(255,255,255,0.35);
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }
         /* Disclaimer */
         .disclaimer {
             background: rgba(255,193,7,0.08);
@@ -314,38 +345,53 @@
     </div>
 
     <div class="auth-card">
-        <div class="tabs">
-            <a href="/" class="tab active">🔐 Login</a>
-            <a href="/signup" class="tab">📝 Sign Up</a>
-            <a href="/forgot" class="tab">🔑 Forgot</a>
+
+        <!-- ══ PI BROWSER SECTION (shown only in Pi Browser) ══ -->
+        <div class="pi-section" id="pi-section">
+            <p class="pi-note">You're in Pi Browser. Sign in or create an account using your Pi identity — no password needed.</p>
+            <button class="btn-pi" id="piLoginBtn" onclick="piLogin()">
+                <span class="pi-symbol">π</span>
+                <span>Continue with Pi</span>
+            </button>
+            <div id="pi-error" style="display:none;background:rgba(231,76,60,0.15);border:1px solid rgba(231,76,60,0.4);color:#ff8a80;padding:10px 14px;border-radius:8px;font-size:13px;margin-top:12px;text-align:center;"></div>
+
         </div>
 
-        {% if error %}
-        <div class="alert-error">❌ {{ error }}</div>
-        {% endif %}
+        <!-- ══ STANDARD LOGIN SECTION ══ -->
+        <div id="standard-section">
+            <div class="tabs" id="login-tabs">
+                <a href="/" class="tab active">🔐 Login</a>
+                <a href="/signup" class="tab">📝 Sign Up</a>
+                <a href="/forgot" class="tab">🔑 Forgot</a>
+            </div>
 
-        <form method="POST" autocomplete="on">
-            <div class="form-group">
-                <label>Username</label>
-                <input type="text" name="username" autocomplete="username" placeholder="Enter your username" required autocorrect="off" autocapitalize="none" spellcheck="false">
-            </div>
-            <div class="form-group">
-                <label>Password</label>
-                <div style="position:relative;">
-                    <input type="password" name="password" id="passwordInput" autocomplete="current-password" placeholder="Enter your password" required style="padding-right:46px;">
-                    <button type="button" id="togglePw" onclick="togglePassword()"
-                        style="position:absolute;right:12px;top:50%;transform:translateY(-50%);
-                               background:none;border:none;cursor:pointer;padding:4px;
-                               color:rgba(255,255,255,0.4);font-size:18px;line-height:1;">
-                        👁
-                    </button>
+            {% if error %}
+            <div class="alert-error">❌ {{ error }}</div>
+            {% endif %}
+
+            <form method="POST" autocomplete="on">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" name="username" autocomplete="username" placeholder="Enter your username" required autocorrect="off" autocapitalize="none" spellcheck="false">
                 </div>
-            </div>
-            <button type="submit" class="btn" id="loginBtn">
-                <span class="btn-spinner"></span>
-                <span class="btn-text">🔐 Login</span>
-            </button>
-        </form>
+                <div class="form-group">
+                    <label>Password</label>
+                    <div style="position:relative;">
+                        <input type="password" name="password" id="passwordInput" autocomplete="current-password" placeholder="Enter your password" required style="padding-right:46px;">
+                        <button type="button" id="togglePw" onclick="togglePassword()"
+                            style="position:absolute;right:12px;top:50%;transform:translateY(-50%);
+                                   background:none;border:none;cursor:pointer;padding:4px;
+                                   color:rgba(255,255,255,0.4);font-size:18px;line-height:1;">
+                            👁
+                        </button>
+                    </div>
+                </div>
+                <button type="submit" class="btn" id="loginBtn">
+                    <span class="btn-spinner"></span>
+                    <span class="btn-text">🔐 Login</span>
+                </button>
+            </form>
+        </div>
 
         <div class="disclaimer">
             ⚠️ <strong style="color:rgba(255,255,255,0.7);">Disclaimer:</strong> Stock Alerts Pro provides price notifications only. This is NOT financial advice. Natts Digital is not an AFS licensee. Always consult a licensed financial advisor.
@@ -631,85 +677,65 @@ document.querySelector('form').addEventListener('submit', function() {
     }, 8000);
 });
 </script>
-<!-- Pi Network SDK + Auto Login -->
+<!-- Pi Network SDK -->
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 <script>
-(function () {
-  // Only run inside Pi Browser
-  if (typeof window.Pi === 'undefined') return;
+// ── Show Pi section only inside Pi Browser ──
+if (typeof window.Pi !== 'undefined') {
+    Pi.init({ version: "2.0", sandbox: true });
+    document.getElementById('pi-section').style.display = 'block';
+    document.getElementById('standard-section').style.display = 'none';
+}
 
-  Pi.init({ version: "2.0", sandbox: false });
+// ── Pi Login — handles both existing users and new signups ──
+function piLogin() {
+    if (typeof window.Pi === 'undefined') return;
 
-  // --- Show Pi loading overlay immediately, hide password form ---
-  var form = document.querySelector('form');
-  var card = document.querySelector('.auth-card');
+    var btn = document.getElementById('piLoginBtn');
+    var errEl = document.getElementById('pi-error');
+    errEl.style.display = 'none';
 
-  var overlay = document.createElement('div');
-  overlay.id = 'pi-loading';
-  overlay.style.cssText = [
-    'background:rgba(255,255,255,0.06)',
-    'border:1px solid rgba(108,63,197,0.4)',
-    'border-radius:16px',
-    'padding:28px 24px',
-    'text-align:center',
-    'color:#fff',
-    'margin-bottom:16px'
-  ].join(';');
-  overlay.innerHTML = [
-    '<div style="font-size:36px;margin-bottom:12px">π</div>',
-    '<div style="font-size:16px;font-weight:700;margin-bottom:6px">Signing in with Pi...</div>',
-    '<div style="font-size:13px;color:rgba(255,255,255,0.55)">Please wait while we verify your Pi account</div>',
-    '<div style="margin-top:16px;display:inline-block;width:32px;height:32px;',
-    'border:3px solid rgba(255,255,255,0.15);border-top-color:#a78bfa;',
-    'border-radius:50%;animation:piSpin 0.8s linear infinite"></div>',
-    '<style>@keyframes piSpin{to{transform:rotate(360deg)}}</style>'
-  ].join('');
+    // Loading state
+    btn.disabled = true;
+    btn.innerHTML = '<div style="width:20px;height:20px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:piSpin 0.7s linear infinite"></div><span>Signing in...</span>';
 
-  if (card) {
-    card.insertBefore(overlay, card.firstChild);
-    if (form) form.style.display = 'none';
-  }
+    function onIncompletePayment(payment) {
+        if (!payment) return;
+        fetch('/pi/payment/incomplete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ paymentId: payment.identifier, token: '' })
+        }).catch(function(e) { console.warn('Incomplete handler:', e); });
+    }
 
-  function showFallback(reason) {
-    console.warn('Pi auto-login failed:', reason);
-    overlay.remove();
-    if (form) form.style.display = '';
-  }
-
-  // --- Incomplete payment handler ---
-  function onIncompletePayment(payment) {
-    if (!payment) return;
-    console.log('Incomplete payment during login:', payment.identifier);
-    fetch('/pi/payment/incomplete', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ paymentId: payment.identifier, token: '' })
-    }).catch(function (e) { console.warn('Incomplete handler error:', e); });
-  }
-
-  // --- Run Pi.authenticate() immediately ---
-  Pi.authenticate(['username', 'payments'], onIncompletePayment)
-    .then(function (auth) {
-      if (!auth || !auth.accessToken) throw new Error('No accessToken');
-      return fetch('/pi/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ access_token: auth.accessToken })
-      });
-    })
-    .then(function (res) { return res.json(); })
-    .then(function (data) {
-      if (data.status === 'ok' && data.token) {
-        sessionStorage.setItem('sap_token', data.token);
-        window.location.href = '/dashboard?t=' + data.token;
-      } else {
-        showFallback(data.error || 'auth failed');
-      }
-    })
-    .catch(function (err) {
-      showFallback(err.message || err);
-    });
-})();
+    Pi.authenticate(['username', 'payments'], onIncompletePayment)
+        .then(function(auth) {
+            if (!auth || !auth.accessToken) throw new Error('No access token returned from Pi');
+            return fetch('/pi/auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ access_token: auth.accessToken })
+            });
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            if (data.status === 'ok' && data.token) {
+                sessionStorage.setItem('sap_token', data.token);
+                btn.innerHTML = '<span>✅ Success! Redirecting...</span>';
+                window.location.href = '/dashboard?t=' + data.token;
+            } else {
+                throw new Error(data.error || 'Login failed. Please try again.');
+            }
+        })
+        .catch(function(err) {
+            console.error('Pi login error:', err);
+            btn.disabled = false;
+            btn.innerHTML = '<span class="pi-symbol">π</span><span>Continue with Pi</span>';
+            errEl.textContent = '⚠️ ' + (err.message || 'Pi login failed. Try again or use username/password.');
+            errEl.style.display = 'block';
+        });
+}
 </script>
+<style>@keyframes piSpin { to { transform: rotate(360deg); } }</style>
 </body>
 </html>
