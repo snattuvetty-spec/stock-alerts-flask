@@ -17,7 +17,6 @@
 
     <!-- Pi Network SDK -->
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-    <script>Pi.init({ version: "2.0", sandbox: true })</script>
     
     <!-- App Icons -->
     <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png">
@@ -614,55 +613,57 @@ function piLogin() {
 }
 
 // Pi Subscription Payment
-function piSubscribe() {
-    // Debug: show what's happening visibly on screen
-    var dbg = document.createElement('div');
-    dbg.style.cssText = 'position:fixed;top:60px;left:10px;right:10px;background:#333;color:#fff;padding:12px;border-radius:8px;z-index:9999;font-size:13px;';
-    var piOk = typeof window.Pi !== 'undefined';
-    var ua = navigator.userAgent;
-    var hasSafari = ua.indexOf('Safari/') !== -1;
-    var hasVersion = ua.indexOf('Version/') !== -1;
-    var hasChrome = ua.indexOf('Chrome/') !== -1;
-    dbg.textContent = 'Pi:' + piOk + ' Safari/:' + hasSafari + ' Version/:' + hasVersion + ' Chrome/:' + hasChrome + ' isPi:' + isPiBrowser();
-    document.body.appendChild(dbg);
-    setTimeout(function(){ dbg.remove(); }, 8000);
-
+async function piSubscribe() {
     if (!isPiBrowser()) {
+        alert('Please open this app in Pi Browser.');
         return;
     }
     const piToken = window.sapToken || sessionStorage.getItem('sap_token') || '';
 
-    // Must authenticate with payments scope before Pi.createPayment()
-    // Pi SDK requires this even if already logged in
-    Pi.authenticate(['username', 'payments'], function(incompletePayment) {
-        if (incompletePayment) {
-            console.log('Incomplete payment:', incompletePayment.identifier);
+    function showError(msg) {
+        var e = document.createElement('div');
+        e.style.cssText = 'position:fixed;top:60px;left:10px;right:10px;background:#c0392b;color:#fff;padding:12px;border-radius:8px;z-index:9999;font-size:13px;word-break:break-word;';
+        e.textContent = '❌ ' + msg;
+        document.body.appendChild(e);
+        setTimeout(function(){ e.remove(); }, 12000);
+    }
+
+    try {
+        // Per Pi SDK v2.0 docs: await Pi.init() before any Pi.createPayment() call
+        await Pi.init({ version: "2.0", sandbox: true });
+
+        // Authenticate with payments scope (required to unlock createPayment)
+        const auth = await Pi.authenticate(['username', 'payments'], function(incompletePayment) {
+            if (!incompletePayment) return;
+            console.log('Incomplete payment found:', incompletePayment.identifier);
             fetch('/pi/payment/incomplete', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ paymentId: incompletePayment.identifier, token: piToken })
-            }).catch(e => console.warn(e));
-        }
-    }).then(function(auth) {
-        if (!auth) { alert('Pi authentication failed.'); return; }
-        console.log('Pi auth OK for payment, creating payment...');
+            }).catch(e => console.warn('Incomplete handler error:', e));
+        });
 
+        if (!auth) { showError('Pi authentication returned null.'); return; }
+        console.log('Pi auth OK:', auth.user.username);
+
+        // Create the payment
         Pi.createPayment({
             amount: 0.10,
             memo: 'Stock Alerts Pro — Monthly Subscription',
             metadata: { plan: 'monthly' }
         }, {
             onReadyForServerApproval: function(paymentId) {
-                console.log('Ready for approval:', paymentId);
+                console.log('onReadyForServerApproval:', paymentId);
                 fetch('/pi/payment/approve', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ paymentId: paymentId, token: piToken })
-                }).then(r => r.json()).then(d => console.log('Approve result:', d))
-                  .catch(e => console.error('Approve error:', e));
+                }).then(r => r.json())
+                  .then(d => console.log('Approve result:', d))
+                  .catch(e => showError('Approve fetch error: ' + e));
             },
             onReadyForServerCompletion: function(paymentId, txid) {
-                console.log('Ready for completion:', paymentId, txid);
+                console.log('onReadyForServerCompletion:', paymentId, txid);
                 fetch('/pi/payment/complete', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -672,23 +673,22 @@ function piSubscribe() {
                         alert('🎉 Pi subscription activated!');
                         window.location.href = '/dashboard?t=' + piToken;
                     } else {
-                        alert('Payment error: ' + (data.error || 'Unknown'));
+                        showError('Complete error: ' + (data.error || 'Unknown'));
                     }
-                });
+                }).catch(e => showError('Complete fetch error: ' + e));
             },
             onCancel: function(paymentId) {
                 console.log('Payment cancelled:', paymentId);
-                alert('Payment cancelled.');
             },
             onError: function(error, payment) {
                 console.error('Pi payment error:', error, payment);
-                alert('Pi error: ' + JSON.stringify(error));
+                showError('Pi error: ' + JSON.stringify(error));
             }
         });
-    }).catch(function(err) {
-        console.error('Pi auth error:', err);
-        alert('Pi auth error: ' + (err.message || JSON.stringify(err)));
-    });
+    } catch(err) {
+        showError('piSubscribe error: ' + (err.message || JSON.stringify(err)));
+        console.error('piSubscribe error:', err);
+    }
 }
 </script>
 
