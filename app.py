@@ -2260,6 +2260,22 @@ def pi_auth():
                 }).execute()
                 user = supabase.table('users').select('*').eq('username', username).execute().data[0]
 
+                # Notify admin via Telegram about new Pi signup
+                try:
+                    admin_chat_id = os.getenv('TELEGRAM_CHAT_ID')
+                    if admin_chat_id:
+                        admin_msg = (
+                            "New Pi User Joined!\n\n"
+                            "Pi Username: " + pi_username + "\n"
+                            "App Username: " + username + "\n"
+                            "Pi UID: " + pi_uid + "\n"
+                            "Trial ends: " + trial_ends[:10] + "\n"
+                            "Time: " + datetime.now(ZoneInfo('Australia/Brisbane')).strftime('%d %b %Y %H:%M') + " AEST"
+                        )
+                        send_telegram(admin_msg, admin_chat_id)
+                except Exception as te:
+                    print(f"Admin Pi signup notification error: {str(te)}")
+
         # Create session
         token = ''.join(random.choices(string.ascii_letters + string.digits, k=32))
         supabase.table('users').update({
