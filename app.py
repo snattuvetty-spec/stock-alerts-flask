@@ -287,33 +287,22 @@ def pi_renewal_reminder_job():
                     print(f"Pi reminder: {user['username']} has no Telegram configured — skipping")
                     continue
 
+                expiry_str = expiry.strftime('%d %b %Y')
                 if days_left == 1:
                     msg = (
-                        f"⚠️ *Stock Alerts Pro — Pi Subscription Expiring Tomorrow!*
-
-"
-                        f"Your Pi subscription expires tomorrow ({expiry.strftime('%d %b %Y')}).
-
-"
-                        f"To keep receiving stock alerts, open Stock Alerts Pro in Pi Browser "
-                        f"and tap *π Pay with Pi* to renew for another 30 days (0.10 Pi).
-
-"
-                        f"📱 stockalertspro.nattsdigital.com"
+                        "Warning: Stock Alerts Pro - Pi Subscription Expiring Tomorrow!\n\n"
+                        "Your Pi subscription expires tomorrow (" + expiry_str + ").\n\n"
+                        "To keep receiving stock alerts, open Stock Alerts Pro in Pi Browser "
+                        "and tap Pay with Pi to renew for another 30 days (0.10 Pi).\n\n"
+                        "stockalertspro.nattsdigital.com"
                     )
                 else:
                     msg = (
-                        f"📅 *Stock Alerts Pro — Pi Subscription Renewal Reminder*
-
-"
-                        f"Your Pi subscription expires in 3 days ({expiry.strftime('%d %b %Y')}).
-
-"
-                        f"To keep receiving stock alerts, open Stock Alerts Pro in Pi Browser "
-                        f"and tap *π Pay with Pi* to renew for another 30 days (0.10 Pi).
-
-"
-                        f"📱 stockalertspro.nattsdigital.com"
+                        "Stock Alerts Pro - Pi Subscription Renewal Reminder\n\n"
+                        "Your Pi subscription expires in 3 days (" + expiry_str + ").\n\n"
+                        "To keep receiving stock alerts, open Stock Alerts Pro in Pi Browser "
+                        "and tap Pay with Pi to renew for another 30 days (0.10 Pi).\n\n"
+                        "stockalertspro.nattsdigital.com"
                     )
 
                 sent = send_telegram(msg, chat_id)
