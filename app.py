@@ -250,6 +250,89 @@ def supabase_keepalive():
 
 scheduler.add_job(func=supabase_keepalive, trigger="interval", hours=12)
 
+# Pi subscription renewal reminders — runs once daily
+def pi_renewal_reminder_job():
+    """
+    Sends Telegram reminders to Pi subscribers whose subscription
+    expires in 3 days or 1 day, so they know to renew with Pi.
+    """
+    try:
+        print("=== Pi renewal reminder check started ===")
+        now = datetime.now()
+
+        # Fetch all Pi monthly subscribers who are still premium
+        pi_users = supabase.table('users').select(
+            'username, trial_ends, telegram_chat_id, telegram_enabled'
+        ).eq('subscription_plan', 'pi_monthly').eq('premium', True).execute().data
+
+        if not pi_users:
+            print("Pi renewal check: no Pi subscribers found")
+            return
+
+        reminded = 0
+        for user in pi_users:
+            trial_ends = user.get('trial_ends')
+            if not trial_ends:
+                continue
+            try:
+                expiry = datetime.fromisoformat(trial_ends.replace('Z', ''))
+                days_left = (expiry - now).days
+
+                # Send reminder at 3 days and 1 day before expiry
+                if days_left not in [3, 1]:
+                    continue
+
+                chat_id = user.get('telegram_chat_id')
+                if not chat_id or not user.get('telegram_enabled'):
+                    print(f"Pi reminder: {user['username']} has no Telegram configured — skipping")
+                    continue
+
+                if days_left == 1:
+                    msg = (
+                        f"⚠️ *Stock Alerts Pro — Pi Subscription Expiring Tomorrow!*
+
+"
+                        f"Your Pi subscription expires tomorrow ({expiry.strftime('%d %b %Y')}).
+
+"
+                        f"To keep receiving stock alerts, open Stock Alerts Pro in Pi Browser "
+                        f"and tap *π Pay with Pi* to renew for another 30 days (0.10 Pi).
+
+"
+                        f"📱 stockalertspro.nattsdigital.com"
+                    )
+                else:
+                    msg = (
+                        f"📅 *Stock Alerts Pro — Pi Subscription Renewal Reminder*
+
+"
+                        f"Your Pi subscription expires in 3 days ({expiry.strftime('%d %b %Y')}).
+
+"
+                        f"To keep receiving stock alerts, open Stock Alerts Pro in Pi Browser "
+                        f"and tap *π Pay with Pi* to renew for another 30 days (0.10 Pi).
+
+"
+                        f"📱 stockalertspro.nattsdigital.com"
+                    )
+
+                sent = send_telegram(msg, chat_id)
+                if sent:
+                    reminded += 1
+                    print(f"Pi renewal reminder sent to {user['username']} ({days_left} days left)")
+                else:
+                    print(f"Pi renewal reminder FAILED for {user['username']}")
+
+            except Exception as e:
+                print(f"Pi renewal reminder error for {user.get('username')}: {e}")
+
+        print(f"=== Pi renewal reminder check done — {reminded} reminders sent ===")
+
+    except Exception as e:
+        print(f"Pi renewal reminder job error: {str(e)}")
+
+scheduler.add_job(func=pi_renewal_reminder_job, trigger="interval", hours=24)
+
 try:
     scheduler.start()
     print("Background scheduler started successfully")
@@ -843,6 +926,7 @@ def dashboard():
         subscription_plan=subscription_plan,
         renewal_date=renewal_date,
         days_to_renewal=days_to_renewal,
+        login_method=session.get('login_method', 'password'),
     )
 
 # ============================================================

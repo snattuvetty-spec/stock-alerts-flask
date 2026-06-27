@@ -74,6 +74,28 @@
 </div>
 {% endif %}
 
+<!-- Pi Renewal Reminder Banner (shows 5 days before expiry) -->
+{% if premium and subscription_plan == 'pi_monthly' and days_to_renewal is not none and days_to_renewal <= 5 %}
+<div style="background:linear-gradient(135deg,#5b21b6,#7c3aed);color:white;padding:16px 20px;border-radius:12px;margin-bottom:20px;box-shadow:0 4px 16px rgba(108,63,197,0.4);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <div>
+        {% if days_to_renewal == 0 %}
+        <h3 style="margin:0 0 4px;font-size:16px;">⚠️ Your Pi subscription expires today!</h3>
+        <p style="margin:0;font-size:13px;opacity:0.85;">Renew now to keep your alerts running without interruption.</p>
+        {% elif days_to_renewal == 1 %}
+        <h3 style="margin:0 0 4px;font-size:16px;">⚠️ Pi subscription expires tomorrow!</h3>
+        <p style="margin:0;font-size:13px;opacity:0.85;">Renew now to avoid losing your stock alerts.</p>
+        {% else %}
+        <h3 style="margin:0 0 4px;font-size:16px;">📅 Pi subscription expires in {{ days_to_renewal }} days</h3>
+        <p style="margin:0;font-size:13px;opacity:0.85;">Tap below to renew for another 30 days (0.10 Pi).</p>
+        {% endif %}
+    </div>
+    <button onclick="piSubscribe()"
+            style="background:white;color:#6c3fc5;padding:10px 20px;border-radius:8px;border:none;font-weight:700;font-size:14px;cursor:pointer;white-space:nowrap;flex-shrink:0;">
+        π Renew with Pi
+    </button>
+</div>
+{% endif %}
+
 <!-- Status bar -->
 <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;align-items:center;">
     {% if not premium %}
@@ -252,7 +274,9 @@
         <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:14px;">
           <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px;letter-spacing:0.5px;">PLAN</div>
           <div style="font-weight:600;font-size:15px;color:white;">
-            {% if subscription_plan == 'annual' %}
+            {% if subscription_plan == 'pi_monthly' %}
+              π Monthly Plan — 0.10 Pi/month
+            {% elif subscription_plan == 'annual' %}
               🎁 Annual Plan — AUD $19.99/year
             {% else %}
               💳 Monthly Plan — AUD $1.99/month
@@ -267,7 +291,9 @@
           <div style="font-weight:600;font-size:15px;color:white;">♾️ Permanent Access</div>
           {% else %}
           <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px;letter-spacing:0.5px;">
-            {% if subscription_plan == 'annual' %}RENEWAL DATE{% else %}NEXT BILLING DATE{% endif %}
+            {% if subscription_plan == 'pi_monthly' %}NEXT RENEWAL DATE
+            {% elif subscription_plan == 'annual' %}RENEWAL DATE
+            {% else %}NEXT BILLING DATE{% endif %}
           </div>
           <div style="font-weight:600;font-size:15px;color:white;">📅 {{ renewal_date }}</div>
           {% if days_to_renewal is not none %}
@@ -310,6 +336,9 @@
       </button>
       {% if not premium %}
       <a href="/settings" class="btn" style="flex:1;justify-content:center;background:linear-gradient(135deg,#0072ff,#00c6ff);color:white;font-weight:700;">⭐ Upgrade</a>
+      {% elif subscription_plan == 'pi_monthly' %}
+      <button onclick="piSubscribe();document.getElementById('subModal').classList.remove('active')"
+              class="btn" style="flex:1;justify-content:center;background:linear-gradient(135deg,#6c3fc5,#9b59b6);color:white;font-weight:700;">π Renew with Pi</button>
       {% else %}
       <a href="/settings" class="btn" style="flex:1;justify-content:center;background:linear-gradient(135deg,#0072ff,#00c6ff);color:white;font-weight:700;">Manage</a>
       {% endif %}
