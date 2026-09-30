@@ -7,6 +7,7 @@ The live service (Render + Supabase) was shut down to free resources. Everything
 - `templates/`, `static/` — UI, PWA assets, Pi Network `validation-key.txt`
 - `stock_alerts_schema.sql` — full database schema (run first in a new Supabase project)
 - `pi_migration.sql` — Pi Network payments table/migration (run after the schema)
+- `supabase_setup.sql` — feedback table + Stripe subscription columns on `users` (run last)
 - `.env.example` — every environment variable the app reads
 - `SETUP_CHECKLIST.md` — original Render / Stripe / Gmail setup steps
 
@@ -17,7 +18,7 @@ The live service (Render + Supabase) was shut down to free resources. Everything
 - Database backup: Supabase `pg_dump` taken before deletion (store with the secrets).
 
 ## To revive
-1. Create a Supabase project → SQL editor → run `stock_alerts_schema.sql`, then `pi_migration.sql`.
+1. Create a Supabase project → SQL editor → run `stock_alerts_schema.sql`, then `pi_migration.sql`, then `supabase_setup.sql`.
 2. Restore data from the backup if needed.
 3. Create a Render web service from this repo: build `pip install -r requirements.txt`,
    start `gunicorn app:app` (single worker — the APScheduler jobs run in-process).
